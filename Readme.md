@@ -1,39 +1,76 @@
+# MomPulse Web App
+
+MomPulse is a digital platform dedicated to supporting mothers **before and after pregnancy**. This web application focuses on education, community, and professional consultation booking. The during-pregnancy features (trackers, diet, scheduling) are planned for the mobile app.
+
+---
+
+## 🌟 Features
+
+### Pre-Pregnancy
+- Guidance and tips for women planning to conceive
+- Articles and resources on lifestyle, fertility, and health
+
+### Post-Pregnancy
+- Postpartum care resources
+- Recovery tips, baby care guidance, and mental health support
+
+### Articles & Videos
+- Educational content for mothers
+- Dynamic article pages and categorization
+
+### Community
+- Forum for sharing experiences
+- Peer support for mothers
+
+### Professional Consultation Booking
+- Contact verified professionals
+- Book appointments with gynecologists, dieticians, and other healthcare providers
+
+### Authentication
+- Login, signup, and password recovery functionality
+
+---
+
+## 🏗️ Tech Stack
+
+- **Frontend:** Next.js 14+ (App Router, React 18, Server Components)
+- **Backend:** Node.js + Express.js
+- **Database:** MongoDB / PostgreSQL (flexible)
+- **Optional Services:** Python microservices for AI/ML recommendations
+- **Deployment:** Dockerized backend & frontend
+
+---
+
+## 📁 Project Structure
+
 mompulse-web/
-├── backend/                # Node.js server
-│   ├── controllers/        # API logic
-│   ├── models/             # Database models (MongoDB / PostgreSQL)
-│   ├── routes/             # API endpoints
-│   ├── services/           # Business logic (email, notifications, auth)
-│   ├── utils/              # Helper functions
-│   ├── middlewares/        # Auth, validation, error handling
-│   ├── config/             # DB, environment, secrets
-│   ├── app.js              # Express server entry
-│   └── package.json
-│
-├── python-services/        # Python services (optional AI, ML)
-│   ├── health_recommendations/
-│   │   ├── __init__.py
-│   │   ├── predictor.py
-│   │   └── utils.py
-│   ├── requirements.txt
-│   └── run.py
-│
-├── frontend/               # Next.js frontend
-│   ├── components/         # Reusable React components
-│   ├── pages/              # Next.js pages (SSR / static)
-│   ├── public/             # Images, favicon, static files
-│   ├── styles/             # CSS / SCSS / Tailwind
-│   ├── hooks/              # Custom React hooks
-│   ├── context/            # React context for state management
-│   ├── utils/              # Helper functions
-│   ├── services/           # API calls to backend
-│   ├── package.json
-│   └── next.config.js
-│
-├── docker/                 # Docker setups
-│   ├── Dockerfile.backend
-│   ├── Dockerfile.frontend
-│   └── docker-compose.yml
-│
-├── scripts/                # Dev / deployment scripts
+
+├── backend/
+
+├── python-services/
+
+├── frontend/
+
+│ ├── src/
+
+│ │ ├── app/
+
+│ │ ├── components/
+
+│ │ ├── context/
+
+│ │ ├── hooks/
+
+│ │ ├── services/
+
+│ │ ├── styles/
+
+│ │ └── public/
+
+├── docker/
+
+├── scripts/
+
+├── .env
+
 └── README.md
