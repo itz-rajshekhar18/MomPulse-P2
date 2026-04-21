@@ -3,17 +3,56 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
-import { Metadata } from 'next';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { saveOnboardingData, createUserProfile } from '@/lib/firestore';
 
 export default function OnboardingPage() {
   const [selectedStage, setSelectedStage] = useState<string>('');
   const [age, setAge] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const router = useRouter();
+  const { user } = useAuth();
 
-  const handleContinue = () => {
-    // Handle onboarding completion
-    console.log('Selected stage:', selectedStage);
-    console.log('Age:', age);
-    // Redirect to dashboard or next step
+  const handleContinue = async () => {
+    if (!selectedStage) {
+      setError('Please select a stage');
+      return;
+    }
+
+    if (!user) {
+      setError('You must be logged in');
+      router.push('/login');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      // Create/update user profile
+      await createUserProfile(user.uid, {
+        email: user.email || '',
+        displayName: user.displayName || '',
+        photoURL: user.photoURL || '',
+      });
+
+      // Save onboarding data
+      await saveOnboardingData(user.uid, {
+        currentStage: selectedStage as 'planning' | 'postpartum' | 'pregnancy' | 'period',
+        age: age ? parseInt(age) : undefined,
+        completedAt: new Date() as any,
+      });
+
+      // Redirect to dashboard
+      router.push('/dashboard');
+    } catch (err: any) {
+      console.error('Error saving onboarding data:', err);
+      setError(err.message || 'Failed to save your information. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,6 +75,11 @@ export default function OnboardingPage() {
             <p className="text-gray-600 text-lg font-light">
               Every mother's rhythm is unique. Tell us where you are so we can tailor your sanctuary.
             </p>
+            {error && (
+              <div className="mt-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm max-w-md mx-auto">
+                {error}
+              </div>
+            )}
           </div>
 
           {/* Current Stage Section */}
@@ -201,15 +245,24 @@ export default function OnboardingPage() {
           <div className="max-w-4xl mx-auto">
             <button
               onClick={handleContinue}
-              disabled={!selectedStage}
+              disabled={!selectedStage || loading}
               className={`w-full py-4 px-6 rounded-full font-medium text-white transition-all flex items-center justify-center gap-2 ${
-                selectedStage
+                selectedStage && !loading
                   ? 'bg-purple-600 hover:bg-purple-700 shadow-lg hover:shadow-xl'
                   : 'bg-gray-300 cursor-not-allowed'
               }`}
             >
-              Continue
-              <span>→</span>
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  Continue
+                  <span>→</span>
+                </>
+              )}
             </button>
 
             {/* Privacy Note */}
