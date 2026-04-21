@@ -11,6 +11,28 @@ interface ChatMessageProps {
 }
 
 export default function ChatMessage({ message, isUser, timestamp, isInsight, actionCard }: ChatMessageProps) {
+  // Typing indicator
+  if (message === 'Typing...') {
+    return (
+      <div className="flex gap-4 mb-6">
+        {/* AI Avatar */}
+        <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
+          <span className="text-white text-lg">💚</span>
+        </div>
+
+        <div className="flex-1 max-w-2xl">
+          <div className="bg-gray-50 rounded-3xl rounded-tl-md px-6 py-4">
+            <div className="flex gap-1">
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isUser) {
     return (
       <div className="flex justify-end mb-6">
