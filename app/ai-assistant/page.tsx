@@ -7,7 +7,7 @@ import ChatMessage from '@/components/ai-assistant/ChatMessage';
 import SuggestedPrompts from '@/components/ai-assistant/SuggestedPrompts';
 import ChatInput from '@/components/ai-assistant/ChatInput';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import { getOnboardingData, getUserProfile } from '@/lib/firestore';
+import { getUserProfile, getCurrentConversation, getConversationMessages, saveMessage } from '@/lib/firestore';
 
 interface Message {
   id: string;
@@ -30,22 +30,52 @@ export default function AIAssistantPage() {
   const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [showStageSelector, setShowStageSelector] = useState(false);
+  const [conversationId, setConversationId] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const stages = ['Pre-Pregnancy', 'Pregnancy', 'Postpartum', 'Period Tracker'];
 
-  const handleStageChange = (newStage: string) => {
+  const handleStageChange = async (newStage: string) => {
+    if (!user) return;
+
     setCurrentStage(newStage);
     setShowStageSelector(false);
     
-    // Add a system message about stage change
-    const stageChangeMessage: Message = {
-      id: Date.now().toString(),
-      message: `Switched to ${newStage} mode. How can I help you today?`,
-      isUser: false,
-      timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-    };
-    setMessages((prev) => [...prev, stageChangeMessage]);
+    // Get or create conversation for new stage
+    const newConvId = await getCurrentConversation(user.uid, newStage);
+    setConversationId(newConvId);
+
+    // Try to load from session storage first
+    const sessionKey = `conversation_${user.uid}_${newConvId}`;
+    const cachedMessages = sessionStorage.getItem(sessionKey);
+
+    if (cachedMessages) {
+      // Load from session storage (faster)
+      console.log('Loading stage conversation from session storage');
+      setMessages(JSON.parse(cachedMessages));
+    } else {
+      // Load from Firestore
+      console.log('Loading stage conversation from Firestore');
+      const stageMessages = await getConversationMessages(user.uid, newConvId);
+      
+      if (stageMessages.length > 0) {
+        setMessages(stageMessages);
+        // Cache in session storage
+        sessionStorage.setItem(sessionKey, JSON.stringify(stageMessages));
+      } else {
+        // Create welcome message for new stage
+        const welcomeMessage: Message = {
+          id: Date.now().toString(),
+          message: `Switched to ${newStage} mode. How can I help you today?`,
+          isUser: false,
+          timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+        };
+        setMessages([welcomeMessage]);
+        await saveMessage(user.uid, newConvId, welcomeMessage);
+        // Cache in session storage
+        sessionStorage.setItem(sessionKey, JSON.stringify([welcomeMessage]));
+      }
+    }
   };
 
   useEffect(() => {
@@ -56,10 +86,7 @@ export default function AIAssistantPage() {
 
     const loadUserData = async () => {
       try {
-        const [profile, onboardingData] = await Promise.all([
-          getUserProfile(user.uid),
-          getOnboardingData(user.uid)
-        ]);
+        const profile = await getUserProfile(user.uid);
 
         // Set user name
         if (profile?.displayName) {
@@ -68,15 +95,57 @@ export default function AIAssistantPage() {
           setUserName(user.email.split('@')[0]);
         }
 
-        // Set current stage
-        if (onboardingData) {
+        // Determine current stage
+        let stage = 'Pre-Pregnancy';
+        if (profile?.currentStage) {
           const stageLabels: Record<string, string> = {
             planning: 'Pre-Pregnancy',
             pregnancy: 'Pregnancy',
             postpartum: 'Postpartum',
             period: 'Period Tracker',
           };
-          setCurrentStage(stageLabels[onboardingData.currentStage] || 'Pre-Pregnancy');
+          stage = stageLabels[profile.currentStage] || 'Pre-Pregnancy';
+        }
+        setCurrentStage(stage);
+
+        // Get or create conversation for this stage
+        const convId = await getCurrentConversation(user.uid, stage);
+        setConversationId(convId);
+
+        // Try to load from session storage first
+        const sessionKey = `conversation_${user.uid}_${convId}`;
+        const cachedMessages = sessionStorage.getItem(sessionKey);
+
+        if (cachedMessages) {
+          // Load from session storage (faster)
+          console.log('Loading conversation from session storage');
+          setMessages(JSON.parse(cachedMessages));
+        } else {
+          // Load from Firestore
+          console.log('Loading conversation from Firestore');
+          const existingMessages = await getConversationMessages(user.uid, convId);
+          
+          if (existingMessages.length > 0) {
+            setMessages(existingMessages);
+            // Cache in session storage
+            sessionStorage.setItem(sessionKey, JSON.stringify(existingMessages));
+          } else {
+            // Create initial welcome message
+            const welcomeMessage: Message = {
+              id: '1',
+              message: "Hello, Mama! Welcome to MomPulse AI Assistant. 🌸 I'm here to support you 24/7 with personalized guidance on your journey. Whether you need help tracking your cycle, understanding symptoms, or just want to talk, I'm here for you. MomPulse brings together everything you need - fertility tracking, health insights, expert consultations, and a supportive community - all in one place. How can I help you today?",
+              isUser: false,
+              timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+            };
+            
+            setMessages([welcomeMessage]);
+            
+            // Save welcome message to Firestore
+            await saveMessage(user.uid, convId, welcomeMessage);
+            
+            // Cache in session storage
+            sessionStorage.setItem(sessionKey, JSON.stringify([welcomeMessage]));
+          }
         }
       } catch (error) {
         console.error('Error loading user data:', error);
@@ -87,15 +156,23 @@ export default function AIAssistantPage() {
 
     loadUserData();
 
-    // Initial welcome message
-    setMessages([
-      {
-        id: '1',
-        message: "Hello, Mama! Welcome to MomPulse AI Assistant. 🌸 I'm here to support you 24/7 with personalized guidance on your journey. Whether you need help tracking your cycle, understanding symptoms, or just want to talk, I'm here for you. MomPulse brings together everything you need - fertility tracking, health insights, expert consultations, and a supportive community - all in one place. How can I help you today?",
-        isUser: false,
-        timestamp: '10:24 AM',
-      },
-    ]);
+    // Clear session storage when page is unloaded (browser/tab closed)
+    const handleBeforeUnload = () => {
+      console.log('Clearing session storage on page unload');
+      // Clear all conversation data from session storage
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('conversation_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [user, router]);
 
   const scrollToBottom = () => {
@@ -107,6 +184,8 @@ export default function AIAssistantPage() {
   }, [messages]);
 
   const handleSendMessage = async (message: string) => {
+    if (!user || !conversationId) return;
+
     const userMessage: Message = {
       id: Date.now().toString(),
       message,
@@ -115,6 +194,14 @@ export default function AIAssistantPage() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+
+    // Save user message to Firestore
+    await saveMessage(user.uid, conversationId, userMessage);
+
+    // Update session storage with user message
+    const sessionKey = `conversation_${user.uid}_${conversationId}`;
+    const updatedMessages = [...messages, userMessage];
+    sessionStorage.setItem(sessionKey, JSON.stringify(updatedMessages));
 
     // Add typing indicator
     const typingMessage: Message = {
@@ -156,6 +243,13 @@ export default function AIAssistantPage() {
       };
 
       setMessages((prev) => [...prev, aiResponse]);
+
+      // Save AI response to Firestore
+      await saveMessage(user.uid, conversationId, aiResponse);
+
+      // Update session storage with AI response
+      const finalMessages = [...updatedMessages, aiResponse];
+      sessionStorage.setItem(sessionKey, JSON.stringify(finalMessages));
     } catch (error) {
       console.error('Error sending message:', error);
       
@@ -170,6 +264,13 @@ export default function AIAssistantPage() {
         timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMessage]);
+
+      // Save error message to Firestore
+      await saveMessage(user.uid, conversationId, errorMessage);
+
+      // Update session storage with error message
+      const finalMessages = [...updatedMessages, errorMessage];
+      sessionStorage.setItem(sessionKey, JSON.stringify(finalMessages));
     }
   };
 
