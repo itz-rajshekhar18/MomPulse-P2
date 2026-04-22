@@ -362,3 +362,165 @@ export async function getCycleById(
 
   return null;
 }
+
+// Recovery Log interfaces
+export interface RecoveryLog {
+  id: string;
+  userId: string;
+  day: number; // Days post-delivery
+  deliveryType: 'vaginal' | 'csection';
+  sleep: number; // 1-9 hours
+  pain: number; // 1-10 scale
+  bleeding: number; // 0-5 scale
+  energy: number; // 1-10 scale
+  activity: number; // Steps count
+  mood: number; // 1-10 scale
+  fever: boolean;
+  age: number; // User's age
+  firstTimeMom: boolean; // Is this their first baby
+  recoveryScore: number; // 0-100 calculated by ML model
+  riskLevel: 'low' | 'medium' | 'high';
+  notes?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+// Save recovery log
+export async function saveRecoveryLog(
+  userId: string,
+  logData: Omit<RecoveryLog, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+): Promise<string> {
+  const logsRef = collection(db, 'users', userId, 'recoveryLogs');
+  const { addDoc } = await import('firebase/firestore');
+  
+  const docRef = await addDoc(logsRef, {
+    ...logData,
+    userId,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  return docRef.id;
+}
+
+// Get all recovery logs for a user
+export async function getRecoveryLogs(userId: string): Promise<RecoveryLog[]> {
+  const logsRef = collection(db, 'users', userId, 'recoveryLogs');
+  const { getDocs, query, orderBy } = await import('firebase/firestore');
+  
+  const q = query(logsRef, orderBy('day', 'asc'));
+  const querySnapshot = await getDocs(q);
+
+  const logs: RecoveryLog[] = [];
+  querySnapshot.forEach((doc) => {
+    logs.push({
+      id: doc.id,
+      ...doc.data(),
+    } as RecoveryLog);
+  });
+
+  return logs;
+}
+
+// Get recovery log by day
+export async function getRecoveryLogByDay(
+  userId: string,
+  day: number
+): Promise<RecoveryLog | null> {
+  const logsRef = collection(db, 'users', userId, 'recoveryLogs');
+  const { getDocs, query, where, limit } = await import('firebase/firestore');
+  
+  const q = query(logsRef, where('day', '==', day), limit(1));
+  const querySnapshot = await getDocs(q);
+
+  if (!querySnapshot.empty) {
+    const doc = querySnapshot.docs[0];
+    return {
+      id: doc.id,
+      ...doc.data(),
+    } as RecoveryLog;
+  }
+
+  return null;
+}
+
+// Update recovery log
+export async function updateRecoveryLog(
+  userId: string,
+  logId: string,
+  updates: Partial<Omit<RecoveryLog, 'id' | 'userId' | 'createdAt'>>
+): Promise<void> {
+  const logRef = doc(db, 'users', userId, 'recoveryLogs', logId);
+  
+  await updateDoc(logRef, {
+    ...updates,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// Delete recovery log
+export async function deleteRecoveryLog(
+  userId: string,
+  logId: string
+): Promise<void> {
+  const logRef = doc(db, 'users', userId, 'recoveryLogs', logId);
+  const { deleteDoc } = await import('firebase/firestore');
+  
+  await deleteDoc(logRef);
+}
+
+// Get latest recovery log
+export async function getLatestRecoveryLog(userId: string): Promise<RecoveryLog | null> {
+  const logsRef = collection(db, 'users', userId, 'recoveryLogs');
+  const { getDocs, query, orderBy, limit } = await import('firebase/firestore');
+  
+  const q = query(logsRef, orderBy('day', 'desc'), limit(1));
+  const querySnapshot = await getDocs(q);
+
+  if (!querySnapshot.empty) {
+    const doc = querySnapshot.docs[0];
+    return {
+      id: doc.id,
+      ...doc.data(),
+    } as RecoveryLog;
+  }
+
+  return null;
+}
+
+// Save delivery information
+export interface DeliveryInfo {
+  userId: string;
+  deliveryType: 'vaginal' | 'csection';
+  deliveryDate: string; // YYYY-MM-DD format
+  firstTimeMom?: boolean;
+  complications?: string[];
+  notes?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export async function saveDeliveryInfo(
+  userId: string,
+  deliveryData: Omit<DeliveryInfo, 'userId' | 'createdAt' | 'updatedAt'>
+): Promise<void> {
+  const deliveryRef = doc(db, 'users', userId, 'postpartum', 'delivery');
+  
+  await setDoc(deliveryRef, {
+    ...deliveryData,
+    userId,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function getDeliveryInfo(userId: string): Promise<DeliveryInfo | null> {
+  const deliveryRef = doc(db, 'users', userId, 'postpartum', 'delivery');
+  const deliverySnap = await getDoc(deliveryRef);
+
+  if (deliverySnap.exists()) {
+    return deliverySnap.data() as DeliveryInfo;
+  }
+
+  return null;
+}

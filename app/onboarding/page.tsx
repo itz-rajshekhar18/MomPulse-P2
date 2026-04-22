@@ -21,6 +21,11 @@ export default function OnboardingPage() {
       return;
     }
 
+    if (!age || parseInt(age) < 13 || parseInt(age) > 60) {
+      setError('Please enter a valid age (13-60)');
+      return;
+    }
+
     if (!user) {
       setError('You must be logged in');
       router.push('/login');
@@ -36,12 +41,13 @@ export default function OnboardingPage() {
         email: user.email || '',
         displayName: user.displayName || '',
         photoURL: user.photoURL || '',
+        age: parseInt(age),
       });
 
       // Save onboarding data
       await saveOnboardingData(user.uid, {
         currentStage: selectedStage as 'planning' | 'postpartum' | 'pregnancy' | 'period',
-        age: age ? parseInt(age) : undefined,
+        age: parseInt(age),
         completedAt: new Date() as any,
       });
 
@@ -219,10 +225,10 @@ export default function OnboardingPage() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-1 font-serif">
-                    Your Age
+                    Your Age <span className="text-red-500">*</span>
                   </h3>
                   <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">
-                    Optional Information
+                    Required Information
                   </p>
                 </div>
               </div>
@@ -232,11 +238,14 @@ export default function OnboardingPage() {
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
                 placeholder="e.g. 28"
+                min="13"
+                max="60"
+                required
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
               />
 
               <p className="text-xs text-gray-500 italic mt-3">
-                Sharing your age helps us provide more accurate cycle insights and wellness recommendations tailored to your metabolic rhythm.
+                Your age helps us provide more accurate insights and wellness recommendations tailored to your metabolic rhythm. <span className="text-red-500">*Required</span>
               </p>
             </div>
           </div>
