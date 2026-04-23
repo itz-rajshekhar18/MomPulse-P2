@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { getUserProfile } from '@/lib/firestore';
+import { getUserProfile, getOnboardingData } from '@/lib/firestore';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import PeriodTrackerHeader from '@/components/dashboard/PeriodTrackerHeader';
 import BottomNavigation from '@/components/dashboard/BottomNavigation';
 import FeaturedArticle from '@/components/sanctuary/FeaturedArticle';
 import CategoryPills from '@/components/sanctuary/CategoryPills';
@@ -21,6 +22,7 @@ export default function SanctuaryPage() {
   const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All Stories');
+  const [isPeriodTracker, setIsPeriodTracker] = useState(false);
 
   const categories = [
     'All Stories',
@@ -135,6 +137,10 @@ export default function SanctuaryPage() {
         } else if (user.email) {
           setUserName(user.email.split('@')[0]);
         }
+
+        // Check if user is in period tracker mode
+        const onboardingData = await getOnboardingData(user.uid);
+        setIsPeriodTracker(onboardingData?.currentStage === 'period');
       } catch (error) {
         console.error('Error loading user data:', error);
       } finally {
@@ -177,7 +183,12 @@ export default function SanctuaryPage() {
       {/* Floating Leaves Animation */}
       <FloatingLeaves />
 
-      <DashboardHeader userName={userName} />
+      {/* Use Period Tracker Header if in period mode */}
+      {isPeriodTracker ? (
+        <PeriodTrackerHeader userName={userName} />
+      ) : (
+        <DashboardHeader userName={userName} />
+      )}
 
       <main className="max-w-7xl mx-auto px-6 py-8 relative z-10">
         {/* Header */}

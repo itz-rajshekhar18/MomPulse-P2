@@ -1,8 +1,16 @@
 'use client';
 
-import { AlertTriangle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { AlertTriangle, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { getLatestRecoveryLog, getDeliveryInfo } from '@/lib/firestore';
+import { checkRuleTriggers } from '@/lib/recovery/riskModel';
 
 export default function DoctorConsultAlert() {
+  const { user } = useAuth();
+  const [activeAlerts, setActiveAlerts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const warnings = [
     'Fever over 100.4°F (38°C)',
     'Heavy bleeding (soaking a pad per hour)',
@@ -10,6 +18,31 @@ export default function DoctorConsultAlert() {
     'Shortness of breath or chest pain',
     'Extreme sadness or anxiety'
   ];
+
+  useEffect(() => {
+    const checkForAlerts = async () => {
+      if (!user) return;
+
+      try {
+        const latestLog = await getLatestRecoveryLog(user.uid);
+        const deliveryInfo = await getDeliveryInfo(user.uid);
+
+        if (latestLog && deliveryInfo) {
+          const triggers = checkRuleTriggers({
+            ...latestLog,
+            deliveryType: deliveryInfo.deliveryType,
+          });
+          setActiveAlerts(triggers);
+        }
+      } catch (error) {
+        console.error('Error checking alerts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkForAlerts();
+  }, [user]);
 
   return (
     <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-2xl p-6 shadow-sm border border-red-200">
@@ -19,6 +52,24 @@ export default function DoctorConsultAlert() {
         </div>
         <h3 className="text-lg font-bold text-gray-900">When to consult a doctor</h3>
       </div>
+
+      {/* Active Alerts */}
+      {!loading && activeAlerts.length > 0 && (
+        <div className="mb-4 space-y-2">
+          {activeAlerts.map((alert, index) => (
+            <div
+              key={index}
+              className="bg-red-100 border border-red-300 rounded-xl p-3 flex items-start space-x-2"
+            >
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-red-900">{alert.message}</p>
+                <p className="text-xs text-red-700 mt-1">{alert.action}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       
       <ul className="space-y-2 mb-6">
         {warnings.map((warning, index) => (

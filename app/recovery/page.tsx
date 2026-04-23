@@ -11,6 +11,7 @@ import DailyCareTip from '@/components/recovery/DailyCareTip';
 import RecoveryMetrics from '@/components/recovery/RecoveryMetrics';
 import DoctorConsultAlert from '@/components/recovery/DoctorConsultAlert';
 import WeeklyImprovement from '@/components/recovery/WeeklyImprovement';
+import RecoveryTrendsChart from '@/components/recovery/RecoveryTrendsChart';
 import UpcomingConsultations from '@/components/recovery/UpcomingConsultations';
 import RecommendedContent from '@/components/recovery/RecommendedContent';
 import DeliverySetupModal from '@/components/recovery/DeliverySetupModal';
@@ -154,10 +155,15 @@ export default function RecoveryPage() {
 
           {/* Main Content - Blurred when no delivery info */}
           <div className={hasDeliveryInfo ? '' : 'blur-sm pointer-events-none select-none'}>
-            {/* Timeline and Daily Check-in Row */}
+            {/* Timeline Row */}
+            <div className="mb-6">
+              <RecoveryTimeline />
+            </div>
+
+            {/* Recovery Trends Chart and Daily Check-in Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
               <div className="lg:col-span-2">
-                <RecoveryTimeline />
+                <RecoveryTrendsChart />
               </div>
               <div>
                 <DailyCheckIn />

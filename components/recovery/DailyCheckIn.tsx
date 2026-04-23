@@ -47,8 +47,12 @@ export default function DailyCheckIn() {
 
     setLoading(true);
     try {
+      console.log('Starting to log daily check-in...');
+      
       // Get delivery info
       const deliveryInfo = await getDeliveryInfo(user.uid);
+      console.log('Delivery info:', deliveryInfo);
+      
       if (!deliveryInfo) {
         alert('Please set up your delivery information first');
         setLoading(false);
@@ -57,6 +61,8 @@ export default function DailyCheckIn() {
 
       // Get user profile for age
       const profile = await getUserProfile(user.uid);
+      console.log('User profile:', profile);
+      
       if (!profile?.age) {
         alert('Age information is required. Please update your profile.');
         setLoading(false);
@@ -67,9 +73,11 @@ export default function DailyCheckIn() {
       const deliveryDate = new Date(deliveryInfo.deliveryDate);
       const today = new Date();
       const daysSinceDelivery = Math.floor((today.getTime() - deliveryDate.getTime()) / (1000 * 60 * 60 * 24));
+      console.log('Days since delivery:', daysSinceDelivery);
 
       // Get previous logs for ML model
       const previousLogs = await getRecoveryLogs(user.uid);
+      console.log('Previous logs count:', previousLogs.length);
 
       // Prepare input data with user's age and first-time mom status
       const inputData = {
@@ -85,25 +93,31 @@ export default function DailyCheckIn() {
         age: profile.age,
         firstTimeMom: deliveryInfo.firstTimeMom || false,
       };
+      console.log('Input data:', inputData);
 
       // Calculate recovery score using ML model
       const recoveryScore = predictRecoveryScore(inputData, previousLogs);
+      console.log('Recovery score:', recoveryScore);
 
       // Classify risk
       const riskAssessment = classifyRisk(inputData, previousLogs);
+      console.log('Risk assessment:', riskAssessment);
 
       // Save to Firestore
-      await saveRecoveryLog(user.uid, {
+      console.log('Saving to Firestore...');
+      const logId = await saveRecoveryLog(user.uid, {
         ...inputData,
         recoveryScore,
         riskLevel: riskAssessment.level,
       });
+      console.log('Saved with ID:', logId);
 
       alert(`✅ Logged successfully!\n\nRecovery Score: ${recoveryScore}/100\nRisk Level: ${riskAssessment.level.toUpperCase()}`);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error logging check-in:', error);
-      alert('Failed to log check-in. Please try again.');
+      console.error('Error details:', error.message, error.code);
+      alert(`Failed to log check-in: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }

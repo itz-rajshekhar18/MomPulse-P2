@@ -7,7 +7,8 @@ import ChatMessage from '@/components/ai-assistant/ChatMessage';
 import SuggestedPrompts from '@/components/ai-assistant/SuggestedPrompts';
 import ChatInput from '@/components/ai-assistant/ChatInput';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import { getUserProfile, getCurrentConversation, getConversationMessages, saveMessage } from '@/lib/firestore';
+import PeriodTrackerHeader from '@/components/dashboard/PeriodTrackerHeader';
+import { getUserProfile, getCurrentConversation, getConversationMessages, saveMessage, getOnboardingData } from '@/lib/firestore';
 
 interface Message {
   id: string;
@@ -31,6 +32,7 @@ export default function AIAssistantPage() {
   const [loading, setLoading] = useState(true);
   const [showStageSelector, setShowStageSelector] = useState(false);
   const [conversationId, setConversationId] = useState<string>('');
+  const [isPeriodTracker, setIsPeriodTracker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const stages = ['Pre-Pregnancy', 'Pregnancy', 'Postpartum', 'Period Tracker'];
@@ -94,6 +96,10 @@ export default function AIAssistantPage() {
         } else if (user.email) {
           setUserName(user.email.split('@')[0]);
         }
+
+        // Check if user is in period tracker mode
+        const onboardingData = await getOnboardingData(user.uid);
+        setIsPeriodTracker(onboardingData?.currentStage === 'period');
 
         // Determine current stage
         let stage = 'Pre-Pregnancy';
@@ -315,8 +321,12 @@ export default function AIAssistantPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 flex flex-col">
-      {/* Use Dashboard Header */}
-      <DashboardHeader userName={userName} />
+      {/* Use Period Tracker Header if in period mode */}
+      {isPeriodTracker ? (
+        <PeriodTrackerHeader userName={userName} />
+      ) : (
+        <DashboardHeader userName={userName} />
+      )}
 
       {/* AI Assistant Info */}
       <div className="bg-white border-b border-gray-200 px-6 py-6">

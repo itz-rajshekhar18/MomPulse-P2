@@ -46,16 +46,26 @@ export default function DeliverySetupModal({ isOpen, onClose, onSuccess, userId 
     setError('');
 
     try {
+      console.log('Saving delivery info...');
+      console.log('User ID:', userId);
+      console.log('Delivery Type:', deliveryType);
+      console.log('Delivery Date:', deliveryDate);
+      console.log('First Time Mom:', firstTimeMom);
+      
       await saveDeliveryInfo(userId, {
         deliveryType,
         deliveryDate,
         complications: [],
         notes: firstTimeMom ? 'First-time mother' : 'Experienced mother',
+        firstTimeMom,
       });
-
+      
+      console.log('Delivery info saved successfully!');
+      alert('✅ Delivery information saved successfully!');
       onSuccess();
     } catch (err: any) {
       console.error('Error saving delivery info:', err);
+      console.error('Error details:', err.message, err.code);
       setError(err.message || 'Failed to save delivery information');
     } finally {
       setLoading(false);

@@ -18,6 +18,18 @@ export interface UserProfile {
   currentStage?: 'planning' | 'postpartum' | 'pregnancy' | 'period';
   age?: number;
   onboardingCompleted?: boolean;
+  cycleSettings?: {
+    avgCycleLength: number;
+    avgPeriodLength: number;
+    lastPeriodDate: string;
+    predictOvulation: boolean;
+    trackFlowIntensity: boolean;
+    moodTracking: boolean;
+    cycleStartWarning: boolean;
+    dailyLogReminder: boolean;
+    insightNotifications: boolean;
+    reminderTime: string;
+  };
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -298,6 +310,24 @@ export async function saveCycleData(
     updatedAt: serverTimestamp(),
   });
 
+  // Trigger ML prediction after saving cycle
+  try {
+    const allCycles = await getUserCycles(userId);
+    await fetch('/api/ml/period-prediction', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId,
+        cycles: allCycles
+      })
+    });
+  } catch (error) {
+    console.error('Error triggering ML prediction:', error);
+    // Don't fail the cycle save if ML prediction fails
+  }
+
   return docRef.id;
 }
 
@@ -520,6 +550,50 @@ export async function getDeliveryInfo(userId: string): Promise<DeliveryInfo | nu
 
   if (deliverySnap.exists()) {
     return deliverySnap.data() as DeliveryInfo;
+  }
+
+  return null;
+}
+
+// Period Predictions interface
+export interface PeriodPrediction {
+  userId: string;
+  nextPeriodDate: string;
+  nextOvulationDate: string;
+  predictedCycleLength: number;
+  predictedPeriodLength: number;
+  confidence: number;
+  fertileWindow: {
+    start: string;
+    end: string;
+  };
+  insights: string[];
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+// Save period prediction from ML backend
+export async function savePeriodPrediction(
+  userId: string,
+  predictionData: Omit<PeriodPrediction, 'userId' | 'createdAt' | 'updatedAt'>
+): Promise<void> {
+  const predictionRef = doc(db, 'users', userId, 'predictions', 'period');
+  
+  await setDoc(predictionRef, {
+    ...predictionData,
+    userId,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// Get latest period prediction
+export async function getPeriodPrediction(userId: string): Promise<PeriodPrediction | null> {
+  const predictionRef = doc(db, 'users', userId, 'predictions', 'period');
+  const predictionSnap = await getDoc(predictionRef);
+
+  if (predictionSnap.exists()) {
+    return predictionSnap.data() as PeriodPrediction;
   }
 
   return null;

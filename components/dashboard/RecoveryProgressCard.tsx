@@ -1,10 +1,70 @@
 'use client';
 
 import { ChevronLeft, ChevronRight, CheckCircle2, Lightbulb } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { getDeliveryInfo, getLatestRecoveryLog } from '@/lib/firestore';
 
 export default function RecoveryProgressCard() {
-  const [currentWeek] = useState(6);
+  const { user } = useAuth();
+  const [currentWeek, setCurrentWeek] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [phaseTitle, setPhaseTitle] = useState('THE BEGINNING');
+  const [mainTitle, setMainTitle] = useState('Your Recovery Journey');
+  const [description, setDescription] = useState('Starting your healing journey with care and patience.');
+
+  useEffect(() => {
+    const loadRecoveryData = async () => {
+      if (!user) return;
+
+      try {
+        const deliveryInfo = await getDeliveryInfo(user.uid);
+        const latestLog = await getLatestRecoveryLog(user.uid);
+
+        if (deliveryInfo) {
+          const deliveryDate = new Date(deliveryInfo.deliveryDate);
+          const today = new Date();
+          const daysSince = Math.floor((today.getTime() - deliveryDate.getTime()) / (1000 * 60 * 60 * 24));
+          const week = Math.floor(daysSince / 7);
+          
+          setCurrentWeek(week);
+
+          // Set phase-specific content based on week
+          if (week === 0) {
+            setPhaseTitle('THE BEGINNING');
+            setMainTitle('Welcome to Recovery');
+            setDescription('The first week is about rest and healing. Your body is working hard to recover from delivery.');
+          } else if (week <= 2) {
+            setPhaseTitle('EARLY RECOVERY');
+            setMainTitle('Rest & Restore');
+            setDescription('Focus on rest, gentle movement, and letting your body heal. Listen to your body\'s signals.');
+          } else if (week <= 4) {
+            setPhaseTitle('BUILDING STRENGTH');
+            setMainTitle('Gentle Progress');
+            setDescription('Your body is adapting. Start with light activities and gentle core reconnection exercises.');
+          } else if (week <= 6) {
+            setPhaseTitle('THE TRANSITION PHASE');
+            setMainTitle('Patience is Progress');
+            setDescription('This week, your body starts to find its new equilibrium. Focus on structural support, and light core reconnection.');
+          } else if (week <= 8) {
+            setPhaseTitle('ACTIVE RECOVERY');
+            setMainTitle('Building Momentum');
+            setDescription('You\'re making great progress! Continue building strength while honoring your body\'s limits.');
+          } else {
+            setPhaseTitle('THRIVING');
+            setMainTitle('You\'re Amazing');
+            setDescription('You\'ve come so far! Keep nurturing your body and celebrating your progress.');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading recovery data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRecoveryData();
+  }, [user]);
 
   const milestones = [
     {
@@ -23,6 +83,16 @@ export default function RecoveryProgressCard() {
     }
   ];
 
+  if (loading) {
+    return (
+      <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 shadow-sm border border-purple-100">
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 shadow-sm border border-purple-100">
       {/* Week Indicator */}
@@ -33,7 +103,7 @@ export default function RecoveryProgressCard() {
           </button>
           <div className="px-4 py-1 bg-purple-100 rounded-full">
             <span className="text-sm font-medium text-purple-700">
-              WEEK {currentWeek}: THE TRANSITION PHASE
+              WEEK {currentWeek}: {phaseTitle}
             </span>
           </div>
           <button className="p-1 hover:bg-white/50 rounded-full transition-colors">
@@ -47,10 +117,10 @@ export default function RecoveryProgressCard() {
         {/* Left Side - Text Content */}
         <div>
           <h2 className="text-3xl font-bold text-gray-900 mb-3">
-            Patience is Progress
+            {mainTitle}
           </h2>
           <p className="text-gray-600 mb-6 leading-relaxed">
-            This week, your body starts to find its new equilibrium. Focus on structural support, and light core reconnection.
+            {description}
           </p>
 
           {/* Milestones */}

@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import { getUserProfile, getUserCycles } from '@/lib/firestore';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { getUserProfile, getUserCycles, getOnboardingData } from '@/lib/firestore';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import PeriodTrackerHeader from '@/components/dashboard/PeriodTrackerHeader';
 import MetricCard from '@/components/insights/MetricCard';
 import AIInsightCard from '@/components/insights/AIInsightCard';
 import CycleLengthTrend from '@/components/insights/CycleLengthTrend';
@@ -20,11 +21,13 @@ import { motion } from 'framer-motion';
 export default function InsightsPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [hasCycleData, setHasCycleData] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [cycles, setCycles] = useState<any[]>([]);
+  const [isPeriodTracker, setIsPeriodTracker] = useState(false);
   const { prediction, insights: mlInsights, loading: predictionLoading } = usePeriodPrediction();
 
   useEffect(() => {
@@ -43,6 +46,10 @@ export default function InsightsPage() {
         } else if (user.email) {
           setUserName(user.email.split('@')[0]);
         }
+
+        // Check if user is in period tracker mode
+        const onboardingData = await getOnboardingData(user.uid);
+        setIsPeriodTracker(onboardingData?.currentStage === 'period');
 
         // Check if user has cycle data
         const cyclesData = await getUserCycles(user.uid);
@@ -84,8 +91,12 @@ export default function InsightsPage() {
       {/* Floating Leaves Background */}
       <FloatingLeaves />
 
-      {/* Dashboard Header */}
-      <DashboardHeader userName={userName} />
+      {/* Dashboard Header - Use Period Tracker Header if in period mode */}
+      {isPeriodTracker ? (
+        <PeriodTrackerHeader userName={userName} />
+      ) : (
+        <DashboardHeader userName={userName} />
+      )}
 
       {/* Cycle Log Modal */}
       {user && (

@@ -67,26 +67,23 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && isOwner(userId);
     }
     
+    // Period predictions subcollection - users can only access their own predictions
+    match /users/{userId}/predictions/{document=**} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow write: if isAuthenticated() && isOwner(userId);
+    }
+    
     // Recovery logs subcollection - users can only access their own recovery data
-    // IMPORTANT: Users must have delivery info set up before logging recovery data
     match /users/{userId}/recoveryLogs/{logId} {
       allow read: if isAuthenticated() && isOwner(userId);
-      
-      // Allow create only if delivery info exists
-      allow create: if isAuthenticated() && isOwner(userId) && 
-        exists(/databases/$(database)/documents/users/$(userId)/postpartum/delivery);
-      
+      allow create: if isAuthenticated() && isOwner(userId);
       allow update: if isAuthenticated() && isOwner(userId);
       allow delete: if isAuthenticated() && isOwner(userId);
     }
     
     // Postpartum data subcollection - users can only access their own postpartum data
-    // This must be set up first before recovery logs can be created
     match /users/{userId}/postpartum/{document=**} {
-      allow read: if isAuthenticated() && isOwner(userId);
-      
-      // Allow write for delivery setup
-      allow write: if isAuthenticated() && isOwner(userId);
+      allow read, write: if isAuthenticated() && isOwner(userId);
     }
     
     // Community posts - read by all authenticated users, write by owner

@@ -34,7 +34,7 @@ export default function DashboardPage() {
               router.push('/dashboard/postpartum');
               break;
             case 'period':
-              router.push('/dashboard/period-tracker');
+              router.push('/dashboard/period');
               break;
             default:
               // Stay on main dashboard if no stage selected
