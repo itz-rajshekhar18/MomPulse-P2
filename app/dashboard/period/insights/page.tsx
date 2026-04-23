@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getUserProfile, getUserCycles } from '@/lib/firestore';
 import PeriodTrackerHeader from '@/components/dashboard/PeriodTrackerHeader';
+import CycleTrendChart from '@/components/dashboard/CycleTrendChart';
 import FloatingLeaves from '@/components/animations/FloatingLeaves';
 import { motion } from 'framer-motion';
 import { Sparkles, TrendingUp, Calendar, Activity } from 'lucide-react';
@@ -226,48 +227,8 @@ export default function InsightsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Charts */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Cycle Trend */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">Cycle trend</h3>
-                  <p className="text-sm text-gray-500">Past 6 months cycle comparison</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setViewMode('day')}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      viewMode === 'day' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    Day View
-                  </button>
-                  <button
-                    onClick={() => setViewMode('month')}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      viewMode === 'month' ? 'bg-purple-600 text-white' : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    Month View
-                  </button>
-                </div>
-              </div>
-
-              {/* Bar Chart */}
-              <div className="flex items-end justify-between gap-4 h-48">
-                {cycleTrendData.map((data, index) => (
-                  <div key={index} className="flex-1 flex flex-col items-center">
-                    <div className="w-full bg-gray-100 rounded-t-lg relative" style={{ height: '100%' }}>
-                      <div
-                        className="absolute bottom-0 w-full bg-gradient-to-t from-purple-600 to-purple-400 rounded-t-lg transition-all"
-                        style={{ height: `${(data.value / 32) * 100}%` }}
-                      ></div>
-                    </div>
-                    <span className="text-xs text-gray-500 mt-2 font-medium">{data.month}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Cycle Trend Chart - Full Component */}
+            <CycleTrendChart cycles={cycles} />
 
             {/* Mood vs Cycle */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">

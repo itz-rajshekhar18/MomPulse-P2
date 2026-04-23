@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { getUserProfile } from '@/lib/firestore';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import PeriodTrackerHeader from '@/components/dashboard/PeriodTrackerHeader';
 import CreatePostCard from '@/components/community/CreatePostCard';
 import TopicPill from '@/components/community/TopicPill';
 import CommunityPost from '@/components/community/CommunityPost';
@@ -146,7 +146,7 @@ export default function CommunityPage() {
       {/* Floating Leaves Animation */}
       <FloatingLeaves />
 
-      <DashboardHeader userName={userName} />
+      <PeriodTrackerHeader userName={userName} />
 
       <main className="max-w-7xl mx-auto px-6 py-8 relative z-10">
         {/* Header */}

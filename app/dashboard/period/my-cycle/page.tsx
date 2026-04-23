@@ -7,7 +7,7 @@ import { getUserProfile, getUserCycles, saveCycleData, updateUserProfile } from 
 import PeriodTrackerHeader from '@/components/dashboard/PeriodTrackerHeader';
 import FloatingLeaves from '@/components/animations/FloatingLeaves';
 import { motion } from 'framer-motion';
-import { Settings, Bell, Shield, History, Calendar, Droplet, Smile, Sparkles, Plus, Minus } from 'lucide-react';
+import { Settings, Bell, History, Calendar, Droplet, Smile, Sparkles, Plus, Minus } from 'lucide-react';
 
 export default function MyCyclePage() {
   const { user } = useAuth();
@@ -51,7 +51,6 @@ export default function MyCyclePage() {
   const tabs = [
     { id: 'core', label: 'Core Settings', icon: Settings },
     { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'privacy', label: 'Privacy & Data', icon: Shield },
     { id: 'history', label: 'Cycle History', icon: History }
   ];
 
@@ -550,33 +549,8 @@ export default function MyCyclePage() {
                   <p className="text-gray-600 mb-6">Customize how and when you receive notifications from MomPulse.</p>
                   
                   <div className="space-y-6">
-                    {/* Email Notifications */}
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Email Notifications</h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between py-2">
-                          <span className="text-gray-700">Weekly Summary</span>
-                          <button className="w-14 h-8 rounded-full bg-purple-600 transition-colors relative">
-                            <div className="absolute top-1 w-6 h-6 bg-white rounded-full translate-x-7"></div>
-                          </button>
-                        </div>
-                        <div className="flex items-center justify-between py-2">
-                          <span className="text-gray-700">Cycle Insights</span>
-                          <button className="w-14 h-8 rounded-full bg-purple-600 transition-colors relative">
-                            <div className="absolute top-1 w-6 h-6 bg-white rounded-full translate-x-7"></div>
-                          </button>
-                        </div>
-                        <div className="flex items-center justify-between py-2">
-                          <span className="text-gray-700">Health Tips</span>
-                          <button className="w-14 h-8 rounded-full bg-gray-300 transition-colors relative">
-                            <div className="absolute top-1 w-6 h-6 bg-white rounded-full translate-x-1"></div>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
                     {/* Push Notifications */}
-                    <div className="pt-6 border-t border-gray-200">
+                    <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Push Notifications</h3>
                       <div className="space-y-3">
                         <div className="flex items-center justify-between py-2">
@@ -620,71 +594,6 @@ export default function MyCyclePage() {
                             defaultValue="08:00"
                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                           />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'privacy' && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Privacy & Data</h2>
-                  <p className="text-gray-600 mb-6">Manage your data privacy and security settings.</p>
-                  
-                  <div className="space-y-6">
-                    {/* Data Sharing */}
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Sharing</h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between py-2">
-                          <div>
-                            <p className="text-gray-900 font-medium">Anonymous Analytics</p>
-                            <p className="text-sm text-gray-500">Help improve MomPulse</p>
-                          </div>
-                          <button className="w-14 h-8 rounded-full bg-purple-600 transition-colors relative">
-                            <div className="absolute top-1 w-6 h-6 bg-white rounded-full translate-x-7"></div>
-                          </button>
-                        </div>
-                        <div className="flex items-center justify-between py-2">
-                          <div>
-                            <p className="text-gray-900 font-medium">Research Participation</p>
-                            <p className="text-sm text-gray-500">Contribute to women's health research</p>
-                          </div>
-                          <button className="w-14 h-8 rounded-full bg-gray-300 transition-colors relative">
-                            <div className="absolute top-1 w-6 h-6 bg-white rounded-full translate-x-1"></div>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Data Export */}
-                    <div className="pt-6 border-t border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Management</h3>
-                      <div className="space-y-3">
-                        <button className="w-full px-6 py-3 bg-purple-100 text-purple-700 rounded-xl font-semibold hover:bg-purple-200 transition-colors text-left">
-                          📥 Export My Data
-                        </button>
-                        <button className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors text-left">
-                          🔒 Request Data Deletion
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Security */}
-                    <div className="pt-6 border-t border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Security</h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between py-2">
-                          <div>
-                            <p className="text-gray-900 font-medium">Two-Factor Authentication</p>
-                            <p className="text-sm text-gray-500">Add extra security to your account</p>
-                          </div>
-                          <button className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors text-sm">
-                            Enable
-                          </button>
                         </div>
                       </div>
                     </div>

@@ -23,7 +23,7 @@ export default function CommunityCards() {
         </h3>
 
         <button
-          onClick={() => router.push('/community')}
+          onClick={() => router.push('/sanctuary')}
           className="px-6 py-3 bg-white text-pink-600 rounded-xl font-semibold hover:shadow-lg transition-all inline-flex items-center space-x-2"
         >
           <span>Read Guide</span>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, BarChart3, Settings, BookOpen, Sparkles, Home } from 'lucide-react';
+import { Calendar, BarChart3, Settings, BookOpen, Sparkles, Home, Users } from 'lucide-react';
 
 interface PeriodTrackerHeaderProps {
   userName?: string;
@@ -29,6 +29,12 @@ export default function PeriodTrackerHeader({ userName }: PeriodTrackerHeaderPro
       label: 'Insights',
       icon: BarChart3,
       description: 'Analytics'
+    },
+    {
+      href: '/community',
+      label: 'Community',
+      icon: Users,
+      description: 'Connect & Share'
     },
     {
       href: '/dashboard/period/my-cycle',

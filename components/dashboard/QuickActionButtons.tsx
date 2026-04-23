@@ -12,14 +12,14 @@ export default function QuickActionButtons() {
       label: 'Log Feels',
       color: 'bg-purple-50',
       iconColor: 'text-purple-600',
-      onClick: () => router.push('/insights')
+      onClick: () => router.push('/dashboard/period/calendar')
     },
     {
       icon: Smile,
       label: 'Mood Check',
       color: 'bg-pink-50',
       iconColor: 'text-pink-600',
-      onClick: () => router.push('/insights')
+      onClick: () => router.push('/dashboard/period/calendar')
     },
     {
       icon: MessageCircle,
@@ -33,7 +33,7 @@ export default function QuickActionButtons() {
       label: 'Full View',
       color: 'bg-teal-50',
       iconColor: 'text-teal-600',
-      onClick: () => router.push('/insights')
+      onClick: () => router.push('/dashboard/period/calendar')
     }
   ];
 
