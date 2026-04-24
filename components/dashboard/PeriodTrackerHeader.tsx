@@ -31,7 +31,7 @@ export default function PeriodTrackerHeader({ userName }: PeriodTrackerHeaderPro
       description: 'Analytics'
     },
     {
-      href: '/community',
+      href: '/community?section=period',
       label: 'Community',
       icon: Users,
       description: 'Connect & Share'

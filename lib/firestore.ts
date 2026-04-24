@@ -598,3 +598,459 @@ export async function getPeriodPrediction(userId: string): Promise<PeriodPredict
 
   return null;
 }
+
+// Community Post interfaces
+export type CommunitySection = 'period' | 'pre-pregnancy' | 'postpartum' | 'general';
+
+export interface CommunityPost {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  content: string;
+  section: CommunitySection;
+  topics?: string[];
+  imageUrl?: string;
+  likesCount: number;
+  commentsCount: number;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface CommunityComment {
+  id: string;
+  postId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  content: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface CommunityLike {
+  userId: string;
+  userName: string;
+  createdAt: Timestamp;
+}
+
+export interface CommunityProfile {
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  bio?: string;
+  postsCount: number;
+  commentsCount: number;
+  likesReceived: number;
+  reputation: number;
+  badges: string[];
+  joinedAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+// Create a community post
+export async function createCommunityPost(
+  section: CommunitySection,
+  postData: Omit<CommunityPost, 'id' | 'likesCount' | 'commentsCount' | 'createdAt' | 'updatedAt'>
+): Promise<string> {
+  const postsRef = collection(db, 'community', section, 'posts');
+  const { addDoc } = await import('firebase/firestore');
+  
+  const docRef = await addDoc(postsRef, {
+    ...postData,
+    section,
+    likesCount: 0,
+    commentsCount: 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  // Update user's community profile
+  await incrementUserPostCount(postData.userId);
+
+  return docRef.id;
+}
+
+// Get posts from a specific section
+export async function getCommunityPosts(
+  section: CommunitySection,
+  limitCount: number = 20
+): Promise<CommunityPost[]> {
+  const postsRef = collection(db, 'community', section, 'posts');
+  const { getDocs, query, orderBy, limit } = await import('firebase/firestore');
+  
+  const q = query(postsRef, orderBy('createdAt', 'desc'), limit(limitCount));
+  const querySnapshot = await getDocs(q);
+
+  const posts: CommunityPost[] = [];
+  querySnapshot.forEach((doc) => {
+    posts.push({
+      id: doc.id,
+      ...doc.data(),
+    } as CommunityPost);
+  });
+
+  return posts;
+}
+
+// Get a single post by ID
+export async function getCommunityPost(
+  section: CommunitySection,
+  postId: string
+): Promise<CommunityPost | null> {
+  const postRef = doc(db, 'community', section, 'posts', postId);
+  const postSnap = await getDoc(postRef);
+
+  if (postSnap.exists()) {
+    return {
+      id: postSnap.id,
+      ...postSnap.data(),
+    } as CommunityPost;
+  }
+
+  return null;
+}
+
+// Update a community post
+export async function updateCommunityPost(
+  section: CommunitySection,
+  postId: string,
+  updates: Partial<Pick<CommunityPost, 'content' | 'topics' | 'imageUrl'>>
+): Promise<void> {
+  const postRef = doc(db, 'community', section, 'posts', postId);
+  
+  await updateDoc(postRef, {
+    ...updates,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// Delete a community post
+export async function deleteCommunityPost(
+  section: CommunitySection,
+  postId: string,
+  userId: string
+): Promise<void> {
+  const postRef = doc(db, 'community', section, 'posts', postId);
+  const { deleteDoc } = await import('firebase/firestore');
+  
+  await deleteDoc(postRef);
+
+  // Update user's community profile
+  await decrementUserPostCount(userId);
+}
+
+// Add a comment to a post
+export async function addComment(
+  section: CommunitySection,
+  postId: string,
+  commentData: Omit<CommunityComment, 'id' | 'postId' | 'createdAt' | 'updatedAt'>
+): Promise<string> {
+  const commentsRef = collection(db, 'community', section, 'posts', postId, 'comments');
+  const { addDoc, increment } = await import('firebase/firestore');
+  
+  const docRef = await addDoc(commentsRef, {
+    ...commentData,
+    postId,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  // Increment comments count on the post
+  const postRef = doc(db, 'community', section, 'posts', postId);
+  await updateDoc(postRef, {
+    commentsCount: increment(1),
+    updatedAt: serverTimestamp(),
+  });
+
+  // Update user's community profile
+  await incrementUserCommentCount(commentData.userId);
+
+  return docRef.id;
+}
+
+// Get comments for a post
+export async function getPostComments(
+  section: CommunitySection,
+  postId: string
+): Promise<CommunityComment[]> {
+  const commentsRef = collection(db, 'community', section, 'posts', postId, 'comments');
+  const { getDocs, query, orderBy } = await import('firebase/firestore');
+  
+  const q = query(commentsRef, orderBy('createdAt', 'asc'));
+  const querySnapshot = await getDocs(q);
+
+  const comments: CommunityComment[] = [];
+  querySnapshot.forEach((doc) => {
+    comments.push({
+      id: doc.id,
+      ...doc.data(),
+    } as CommunityComment);
+  });
+
+  return comments;
+}
+
+// Delete a comment
+export async function deleteComment(
+  section: CommunitySection,
+  postId: string,
+  commentId: string,
+  userId: string
+): Promise<void> {
+  const commentRef = doc(db, 'community', section, 'posts', postId, 'comments', commentId);
+  const { deleteDoc, increment } = await import('firebase/firestore');
+  
+  await deleteDoc(commentRef);
+
+  // Decrement comments count on the post
+  const postRef = doc(db, 'community', section, 'posts', postId);
+  await updateDoc(postRef, {
+    commentsCount: increment(-1),
+    updatedAt: serverTimestamp(),
+  });
+
+  // Update user's community profile
+  await decrementUserCommentCount(userId);
+}
+
+// Like a post
+export async function likePost(
+  section: CommunitySection,
+  postId: string,
+  userId: string,
+  userName: string
+): Promise<void> {
+  const likeRef = doc(db, 'community', section, 'posts', postId, 'likes', userId);
+  const { increment } = await import('firebase/firestore');
+  
+  await setDoc(likeRef, {
+    userId,
+    userName,
+    createdAt: serverTimestamp(),
+  });
+
+  // Increment likes count on the post
+  const postRef = doc(db, 'community', section, 'posts', postId);
+  await updateDoc(postRef, {
+    likesCount: increment(1),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// Unlike a post
+export async function unlikePost(
+  section: CommunitySection,
+  postId: string,
+  userId: string
+): Promise<void> {
+  const likeRef = doc(db, 'community', section, 'posts', postId, 'likes', userId);
+  const { deleteDoc, increment } = await import('firebase/firestore');
+  
+  await deleteDoc(likeRef);
+
+  // Decrement likes count on the post
+  const postRef = doc(db, 'community', section, 'posts', postId);
+  await updateDoc(postRef, {
+    likesCount: increment(-1),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// Check if user has liked a post
+export async function hasUserLikedPost(
+  section: CommunitySection,
+  postId: string,
+  userId: string
+): Promise<boolean> {
+  const likeRef = doc(db, 'community', section, 'posts', postId, 'likes', userId);
+  const likeSnap = await getDoc(likeRef);
+  
+  return likeSnap.exists();
+}
+
+// Get post likes
+export async function getPostLikes(
+  section: CommunitySection,
+  postId: string
+): Promise<CommunityLike[]> {
+  const likesRef = collection(db, 'community', section, 'posts', postId, 'likes');
+  const { getDocs } = await import('firebase/firestore');
+  
+  const querySnapshot = await getDocs(likesRef);
+
+  const likes: CommunityLike[] = [];
+  querySnapshot.forEach((doc) => {
+    likes.push(doc.data() as CommunityLike);
+  });
+
+  return likes;
+}
+
+// Get or create user's community profile
+export async function getCommunityProfile(userId: string): Promise<CommunityProfile | null> {
+  const profileRef = doc(db, 'communityProfiles', userId);
+  const profileSnap = await getDoc(profileRef);
+
+  if (profileSnap.exists()) {
+    return profileSnap.data() as CommunityProfile;
+  }
+
+  return null;
+}
+
+// Create or update community profile
+export async function createOrUpdateCommunityProfile(
+  userId: string,
+  profileData: Partial<Omit<CommunityProfile, 'userId' | 'joinedAt' | 'updatedAt'>>
+): Promise<void> {
+  const profileRef = doc(db, 'communityProfiles', userId);
+  const profileSnap = await getDoc(profileRef);
+
+  if (profileSnap.exists()) {
+    // Update existing profile
+    await updateDoc(profileRef, {
+      ...profileData,
+      updatedAt: serverTimestamp(),
+    });
+  } else {
+    // Create new profile
+    await setDoc(profileRef, {
+      userId,
+      postsCount: 0,
+      commentsCount: 0,
+      likesReceived: 0,
+      reputation: 0,
+      badges: [],
+      ...profileData,
+      joinedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  }
+}
+
+// Helper functions to update community profile stats
+async function incrementUserPostCount(userId: string): Promise<void> {
+  const profileRef = doc(db, 'communityProfiles', userId);
+  const { increment } = await import('firebase/firestore');
+  
+  await updateDoc(profileRef, {
+    postsCount: increment(1),
+    reputation: increment(5), // Award 5 reputation points for a post
+    updatedAt: serverTimestamp(),
+  }).catch(async () => {
+    // If profile doesn't exist, create it
+    await createOrUpdateCommunityProfile(userId, {
+      postsCount: 1,
+      reputation: 5,
+    });
+  });
+}
+
+async function decrementUserPostCount(userId: string): Promise<void> {
+  const profileRef = doc(db, 'communityProfiles', userId);
+  const { increment } = await import('firebase/firestore');
+  
+  await updateDoc(profileRef, {
+    postsCount: increment(-1),
+    reputation: increment(-5),
+    updatedAt: serverTimestamp(),
+  }).catch(() => {
+    // Ignore if profile doesn't exist
+  });
+}
+
+async function incrementUserCommentCount(userId: string): Promise<void> {
+  const profileRef = doc(db, 'communityProfiles', userId);
+  const { increment } = await import('firebase/firestore');
+  
+  await updateDoc(profileRef, {
+    commentsCount: increment(1),
+    reputation: increment(2), // Award 2 reputation points for a comment
+    updatedAt: serverTimestamp(),
+  }).catch(async () => {
+    // If profile doesn't exist, create it
+    await createOrUpdateCommunityProfile(userId, {
+      commentsCount: 1,
+      reputation: 2,
+    });
+  });
+}
+
+async function decrementUserCommentCount(userId: string): Promise<void> {
+  const profileRef = doc(db, 'communityProfiles', userId);
+  const { increment } = await import('firebase/firestore');
+  
+  await updateDoc(profileRef, {
+    commentsCount: increment(-1),
+    reputation: increment(-2),
+    updatedAt: serverTimestamp(),
+  }).catch(() => {
+    // Ignore if profile doesn't exist
+  });
+}
+
+// Get posts by user
+export async function getUserPosts(
+  userId: string,
+  section?: CommunitySection
+): Promise<CommunityPost[]> {
+  const { getDocs, query, where, orderBy, collectionGroup } = await import('firebase/firestore');
+  
+  if (section) {
+    // Get posts from specific section
+    const postsRef = collection(db, 'community', section, 'posts');
+    const q = query(
+      postsRef,
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+
+    const posts: CommunityPost[] = [];
+    querySnapshot.forEach((doc) => {
+      posts.push({
+        id: doc.id,
+        ...doc.data(),
+      } as CommunityPost);
+    });
+
+    return posts;
+  } else {
+    // Get posts from all sections using collection group query
+    const postsQuery = query(
+      collectionGroup(db, 'posts'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(postsQuery);
+
+    const posts: CommunityPost[] = [];
+    querySnapshot.forEach((doc) => {
+      posts.push({
+        id: doc.id,
+        ...doc.data(),
+      } as CommunityPost);
+    });
+
+    return posts;
+  }
+}
+
+// Get top contributors for a section
+export async function getTopContributors(
+  limitCount: number = 5
+): Promise<CommunityProfile[]> {
+  const profilesRef = collection(db, 'communityProfiles');
+  const { getDocs, query, orderBy, limit } = await import('firebase/firestore');
+  
+  const q = query(profilesRef, orderBy('reputation', 'desc'), limit(limitCount));
+  const querySnapshot = await getDocs(q);
+
+  const profiles: CommunityProfile[] = [];
+  querySnapshot.forEach((doc) => {
+    profiles.push(doc.data() as CommunityProfile);
+  });
+
+  return profiles;
+}

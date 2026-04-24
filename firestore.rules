@@ -1,5 +1,4 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
     
@@ -15,16 +14,9 @@ service cloud.firestore {
     
     // Users collection - users can only read/write their own data
     match /users/{userId} {
-      // Allow read if authenticated and is the owner
       allow read: if isAuthenticated() && isOwner(userId);
-      
-      // Allow create if authenticated and creating their own document
       allow create: if isAuthenticated() && isOwner(userId);
-      
-      // Allow update if authenticated and is the owner
       allow update: if isAuthenticated() && isOwner(userId);
-      
-      // Allow delete if authenticated and is the owner
       allow delete: if isAuthenticated() && isOwner(userId);
     }
     
@@ -86,12 +78,83 @@ service cloud.firestore {
       allow read, write: if isAuthenticated() && isOwner(userId);
     }
     
-    // Community posts - read by all authenticated users, write by owner
-    match /posts/{postId} {
+    // Community posts - categorized by section type
+    // Sections: 'period', 'pre-pregnancy', 'postpartum', 'general'
+    match /community/{section}/posts/{postId} {
+      // Helper function to validate section type
+      function isValidSection() {
+        return section == 'period' || section == 'pre-pregnancy' || section == 'postpartum' || section == 'general';
+      }
+      
+      // Helper function to validate post data
+      function isValidPost() {
+        return request.resource.data.keys().hasAll(['userId', 'userName', 'content', 'section', 'createdAt']) &&
+               request.resource.data.userId == request.auth.uid &&
+               request.resource.data.section == section &&
+               request.resource.data.content is string &&
+               request.resource.data.content.size() > 0 &&
+               request.resource.data.content.size() <= 5000;
+      }
+      
+      // All authenticated users can read posts in any section
+      allow read: if isAuthenticated() && isValidSection();
+      
+      // Authenticated users can create posts with valid data
+      allow create: if isAuthenticated() && isValidSection() && isValidPost();
+      
+      // Only post owner can update or delete their posts
+      allow update, delete: if isAuthenticated() && isValidSection() && resource.data.userId == request.auth.uid;
+      
+      // Comments subcollection
+      match /comments/{commentId} {
+        // Helper function to validate comment data
+        function isValidComment() {
+          return request.resource.data.keys().hasAll(['userId', 'userName', 'content', 'createdAt']) &&
+                 request.resource.data.userId == request.auth.uid &&
+                 request.resource.data.content is string &&
+                 request.resource.data.content.size() > 0 &&
+                 request.resource.data.content.size() <= 2000;
+        }
+        
+        // All authenticated users can read comments
+        allow read: if isAuthenticated();
+        
+        // Authenticated users can create comments with valid data
+        allow create: if isAuthenticated() && isValidComment();
+        
+        // Only comment owner can update or delete their comments
+        allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      }
+      
+      // Likes subcollection
+      match /likes/{likeId} {
+        // All authenticated users can read likes
+        allow read: if isAuthenticated();
+        
+        // Users can only create/delete their own likes
+        allow create, delete: if isAuthenticated() && request.auth.uid == likeId;
+      }
+    }
+    
+    // Community topics/categories metadata
+    match /community/{section}/topics/{topicId} {
+      // All authenticated users can read topics
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && 
-        resource.data.userId == request.auth.uid;
+      
+      // Only admins can write topics (for now, no one can write)
+      allow write: if false;
+    }
+    
+    // User community profiles (reputation, badges, etc.)
+    match /communityProfiles/{userId} {
+      // All authenticated users can read community profiles
+      allow read: if isAuthenticated();
+      
+      // Users can only update their own community profile
+      allow create, update: if isAuthenticated() && isOwner(userId);
+      
+      // Users can delete their own community profile
+      allow delete: if isAuthenticated() && isOwner(userId);
     }
     
     // Deny all other access
