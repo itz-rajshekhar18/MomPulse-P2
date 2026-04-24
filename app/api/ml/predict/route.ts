@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const ML_BACKEND_URL = process.env.ML_BACKEND_URL || 'http://localhost:5050';
+const ML_BACKEND_URL = process.env.ML_BACKEND_URL || 'https://mompulse-p2-2.onrender.com';
 
 export async function POST(req: NextRequest) {
   try {

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }));
 
     // Send to ML backend for prediction
-    const mlBackendUrl = process.env.ML_BACKEND_URL || 'http://localhost:5050';
+    const mlBackendUrl = process.env.ML_BACKEND_URL || 'https://mompulse-p2-2.onrender.com';
     
     try {
       const mlResponse = await fetch(`${mlBackendUrl}/api/predict`, {
