@@ -93,7 +93,7 @@ export default function PrePregnancyDashboard() {
       {/* Floating Leaves Animation */}
       <FloatingLeaves />
 
-      <DashboardHeader userName={userName} />
+      <DashboardHeader userName={userName} section="pre-pregnancy" />
 
       {/* Cycle Log Modal */}
       {user && (

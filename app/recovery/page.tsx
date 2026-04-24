@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getUserProfile, getDeliveryInfo } from '@/lib/firestore';
-import RecoveryHeader from '@/components/recovery/RecoveryHeader';
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import RecoveryTimeline from '@/components/recovery/RecoveryTimeline';
 import DailyCheckIn from '@/components/recovery/DailyCheckIn';
 import DailyCareTip from '@/components/recovery/DailyCareTip';
@@ -91,7 +91,7 @@ export default function RecoveryPage() {
       {/* Floating Leaves Animation */}
       <FloatingLeaves />
 
-      <RecoveryHeader userName={userName} />
+      <DashboardHeader userName={userName} showRecovery={true} section="postpartum" />
 
       {/* Delivery Setup Modal */}
       {user && (

@@ -653,17 +653,28 @@ export async function createCommunityPost(
   section: CommunitySection,
   postData: Omit<CommunityPost, 'id' | 'likesCount' | 'commentsCount' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
+  console.log('createCommunityPost - Creating post in section:', section);
+  console.log('createCommunityPost - Post data section:', postData.section);
+  console.log('createCommunityPost - Collection path:', `community/${section}/posts`);
+  
+  // Validate that postData.section matches the section parameter
+  if (postData.section !== section) {
+    throw new Error(`Section mismatch: postData.section (${postData.section}) !== section parameter (${section})`);
+  }
+  
   const postsRef = collection(db, 'community', section, 'posts');
   const { addDoc } = await import('firebase/firestore');
   
   const docRef = await addDoc(postsRef, {
     ...postData,
-    section,
+    section, // Ensure section is set correctly
     likesCount: 0,
     commentsCount: 0,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+
+  console.log('createCommunityPost - Post created with ID:', docRef.id);
 
   // Update user's community profile
   await incrementUserPostCount(postData.userId);
@@ -676,6 +687,9 @@ export async function getCommunityPosts(
   section: CommunitySection,
   limitCount: number = 20
 ): Promise<CommunityPost[]> {
+  console.log('getCommunityPosts - Querying section:', section);
+  console.log('getCommunityPosts - Collection path:', `community/${section}/posts`);
+  
   const postsRef = collection(db, 'community', section, 'posts');
   const { getDocs, query, orderBy, limit } = await import('firebase/firestore');
   
@@ -684,12 +698,19 @@ export async function getCommunityPosts(
 
   const posts: CommunityPost[] = [];
   querySnapshot.forEach((doc) => {
+    const postData = doc.data() as CommunityPost;
+    console.log('getCommunityPosts - Found post:', {
+      id: doc.id,
+      section: postData.section,
+      content: postData.content.substring(0, 50)
+    });
     posts.push({
       id: doc.id,
-      ...doc.data(),
-    } as CommunityPost);
+      ...postData,
+    });
   });
 
+  console.log('getCommunityPosts - Total posts found:', posts.length);
   return posts;
 }
 

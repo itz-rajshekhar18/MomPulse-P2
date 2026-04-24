@@ -27,14 +27,24 @@ export default function CommunityPage() {
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   
   // Determine which header to show based on section parameter
-  const sectionParam = searchParams.get('section') || 'general';
-  const section: CommunitySection = 
-    sectionParam === 'period' ? 'period' :
-    sectionParam === 'pre-pregnancy' ? 'pre-pregnancy' :
-    sectionParam === 'postpartum' ? 'postpartum' :
-    'general';
+  const sectionParam = searchParams.get('section');
   
+  // Validate and set section with proper type checking
+  const getValidSection = (param: string | null): CommunitySection => {
+    if (param === 'period') return 'period';
+    if (param === 'pre-pregnancy') return 'pre-pregnancy';
+    if (param === 'postpartum') return 'postpartum';
+    return 'general';
+  };
+  
+  const section = getValidSection(sectionParam);
   const usePeriodTracker = section === 'period';
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Community Page - Section:', section);
+    console.log('Community Page - URL Param:', sectionParam);
+  }, [section, sectionParam]);
 
   useEffect(() => {
     if (!user) {

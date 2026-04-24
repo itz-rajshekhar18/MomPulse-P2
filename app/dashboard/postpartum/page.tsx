@@ -78,7 +78,7 @@ export default function PostPregnancyDashboard() {
       {/* Floating Leaves Animation */}
       <FloatingLeaves />
 
-      <DashboardHeader userName={userName} showRecovery={true} />
+      <DashboardHeader userName={userName} showRecovery={true} section="postpartum" />
 
       <main className="max-w-7xl mx-auto px-6 py-8 relative z-10">
         {/* Greeting with Animation */}
