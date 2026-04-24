@@ -16,6 +16,7 @@ export default function ConsultationPage() {
   const router = useRouter();
   const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [showRecovery, setShowRecovery] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -33,6 +34,9 @@ export default function ConsultationPage() {
         } else if (user.email) {
           setUserName(user.email.split('@')[0]);
         }
+
+        // Determine if user is in postpartum stage
+        setShowRecovery(profile?.currentStage === 'postpartum');
       } catch (error) {
         console.error('Error loading user data:', error);
       } finally {
@@ -121,7 +125,7 @@ export default function ConsultationPage() {
       <FloatingLeaves />
 
       {/* Dashboard Header */}
-      <DashboardHeader userName={userName} />
+      <DashboardHeader userName={userName} showRecovery={showRecovery} />
 
       {/* Hero Section */}
       <HeroSection />

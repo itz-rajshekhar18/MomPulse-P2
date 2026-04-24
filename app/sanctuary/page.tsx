@@ -23,6 +23,7 @@ export default function SanctuaryPage() {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All Stories');
   const [isPeriodTracker, setIsPeriodTracker] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
 
   const categories = [
     'All Stories',
@@ -141,6 +142,9 @@ export default function SanctuaryPage() {
         // Check if user is in period tracker mode
         const onboardingData = await getOnboardingData(user.uid);
         setIsPeriodTracker(onboardingData?.currentStage === 'period');
+
+        // Determine if user is in postpartum stage
+        setShowRecovery(profile?.currentStage === 'postpartum');
       } catch (error) {
         console.error('Error loading user data:', error);
       } finally {
@@ -187,7 +191,7 @@ export default function SanctuaryPage() {
       {isPeriodTracker ? (
         <PeriodTrackerHeader userName={userName} />
       ) : (
-        <DashboardHeader userName={userName} />
+        <DashboardHeader userName={userName} showRecovery={showRecovery} />
       )}
 
       <main className="max-w-7xl mx-auto px-6 py-8 relative z-10">

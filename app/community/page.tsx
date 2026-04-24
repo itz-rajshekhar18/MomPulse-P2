@@ -25,6 +25,7 @@ export default function CommunityPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedPostForComments, setSelectedPostForComments] = useState<string | null>(null);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
   
   // Determine which header to show based on section parameter
   const sectionParam = searchParams.get('section');
@@ -63,6 +64,9 @@ export default function CommunityPage() {
         if (profile?.photoURL) {
           setUserAvatar(profile.photoURL);
         }
+
+        // Determine if user is in postpartum stage
+        setShowRecovery(profile?.currentStage === 'postpartum');
       } catch (error) {
         console.error('Error loading user data:', error);
       } finally {
@@ -188,7 +192,7 @@ export default function CommunityPage() {
       {usePeriodTracker ? (
         <PeriodTrackerHeader userName={userName} />
       ) : (
-        <DashboardHeader userName={userName} />
+        <DashboardHeader userName={userName} showRecovery={showRecovery} />
       )}
 
       {/* Modals */}

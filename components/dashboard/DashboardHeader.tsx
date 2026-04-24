@@ -11,15 +11,19 @@ interface DashboardHeaderProps {
 
 export default function DashboardHeader({ userName, showRecovery = false, section = 'general' }: DashboardHeaderProps) {
   const pathname = usePathname();
-  const isAIAssistantPage = pathname === '/ai-assistant';
   
   // Determine which link should be active based on current page
   const isInsightsPage = pathname === '/insights' || pathname === '/dashboard/pre-pregnancy';
   const isRecoveryPage = pathname === '/recovery' || pathname === '/dashboard/postpartum';
   const isConsultationPage = pathname === '/consultation';
   const isSanctuaryPage = pathname === '/sanctuary';
-  const isCommunityPage = pathname === '/community';
-  const isProfilePage = pathname === '/profile';
+  const isCommunityPage = pathname?.startsWith('/community');
+  const isAIAssistantPage = pathname === '/ai-assistant';
+  
+  // Always show Insights/Recovery link based on showRecovery prop
+  // This prop is passed from the page to indicate user's context
+  // Pre-pregnancy pages pass showRecovery=false (shows "Insights")
+  // Postpartum pages pass showRecovery=true (shows "Recovery")
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50">
@@ -30,6 +34,7 @@ export default function DashboardHeader({ userName, showRecovery = false, sectio
         
         {/* Navigation Links */}
         <nav className="hidden lg:flex items-center gap-8">
+          {/* Always show Insights or Recovery based on user's stage */}
           <Link 
             href={showRecovery ? "/recovery" : "/insights"}
             className={`font-medium transition-colors flex items-center gap-2 ${
@@ -134,6 +139,7 @@ export default function DashboardHeader({ userName, showRecovery = false, sectio
       
       {/* Mobile Navigation */}
       <div className="lg:hidden mt-4 flex items-center gap-2 overflow-x-auto pb-2">
+        {/* Always show Insights or Recovery based on user's stage */}
         <Link 
           href={showRecovery ? "/recovery" : "/insights"}
           className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${

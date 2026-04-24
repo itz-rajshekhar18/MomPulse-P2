@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 interface FertilityWindowTimelineProps {
   prediction?: {
-    next_period_date: string;
+    next_period_start: string;
     ovulation_date: string;
     fertile_window_start: string;
     fertile_window_end: string;
@@ -26,9 +26,9 @@ export default function FertilityWindowTimeline({ prediction }: FertilityWindowT
     }
 
     const cycleLength = Math.round(prediction.avg_cycle_length);
-    const ovulationDay = Math.ceil((new Date(prediction.ovulation_date).getTime() - new Date(prediction.next_period_date).getTime()) / (1000 * 60 * 60 * 24)) + cycleLength;
-    const fertileStartDay = Math.ceil((new Date(prediction.fertile_window_start).getTime() - new Date(prediction.next_period_date).getTime()) / (1000 * 60 * 60 * 24)) + cycleLength;
-    const fertileEndDay = Math.ceil((new Date(prediction.fertile_window_end).getTime() - new Date(prediction.next_period_date).getTime()) / (1000 * 60 * 60 * 24)) + cycleLength;
+    const ovulationDay = Math.ceil((new Date(prediction.ovulation_date).getTime() - new Date(prediction.next_period_start).getTime()) / (1000 * 60 * 60 * 24)) + cycleLength;
+    const fertileStartDay = Math.ceil((new Date(prediction.fertile_window_start).getTime() - new Date(prediction.next_period_start).getTime()) / (1000 * 60 * 60 * 24)) + cycleLength;
+    const fertileEndDay = Math.ceil((new Date(prediction.fertile_window_end).getTime() - new Date(prediction.next_period_start).getTime()) / (1000 * 60 * 60 * 24)) + cycleLength;
 
     return {
       fertileStart: (fertileStartDay / cycleLength) * 100,

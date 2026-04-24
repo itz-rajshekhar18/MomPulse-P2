@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Loader2, Trash2 } from 'lucide-react';
+import { X, Send, Loader2, Trash2, MessageCircle } from 'lucide-react';
 import { CommunityComment, CommunitySection, addComment, getPostComments, deleteComment } from '@/lib/firestore';
 import { formatDistanceToNow } from 'date-fns';
 

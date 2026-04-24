@@ -705,8 +705,8 @@ export async function getCommunityPosts(
       content: postData.content.substring(0, 50)
     });
     posts.push({
-      id: doc.id,
       ...postData,
+      id: doc.id,
     });
   });
 

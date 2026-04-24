@@ -33,6 +33,7 @@ export default function AIAssistantPage() {
   const [showStageSelector, setShowStageSelector] = useState(false);
   const [conversationId, setConversationId] = useState<string>('');
   const [isPeriodTracker, setIsPeriodTracker] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const stages = ['Pre-Pregnancy', 'Pregnancy', 'Postpartum', 'Period Tracker'];
@@ -100,6 +101,9 @@ export default function AIAssistantPage() {
         // Check if user is in period tracker mode
         const onboardingData = await getOnboardingData(user.uid);
         setIsPeriodTracker(onboardingData?.currentStage === 'period');
+
+        // Determine if user is in postpartum stage
+        setShowRecovery(profile?.currentStage === 'postpartum');
 
         // Determine current stage
         let stage = 'Pre-Pregnancy';
@@ -325,7 +329,7 @@ export default function AIAssistantPage() {
       {isPeriodTracker ? (
         <PeriodTrackerHeader userName={userName} />
       ) : (
-        <DashboardHeader userName={userName} />
+        <DashboardHeader userName={userName} showRecovery={showRecovery} />
       )}
 
       {/* AI Assistant Info */}

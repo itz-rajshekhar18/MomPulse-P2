@@ -28,6 +28,7 @@ export default function InsightsPage() {
   const [showModal, setShowModal] = useState(false);
   const [cycles, setCycles] = useState<any[]>([]);
   const [isPeriodTracker, setIsPeriodTracker] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
   const { prediction, insights: mlInsights, loading: predictionLoading } = usePeriodPrediction();
 
   useEffect(() => {
@@ -50,6 +51,9 @@ export default function InsightsPage() {
         // Check if user is in period tracker mode
         const onboardingData = await getOnboardingData(user.uid);
         setIsPeriodTracker(onboardingData?.currentStage === 'period');
+
+        // Determine if user is in postpartum stage
+        setShowRecovery(profile?.currentStage === 'postpartum');
 
         // Check if user has cycle data
         const cyclesData = await getUserCycles(user.uid);
@@ -95,7 +99,7 @@ export default function InsightsPage() {
       {isPeriodTracker ? (
         <PeriodTrackerHeader userName={userName} />
       ) : (
-        <DashboardHeader userName={userName} />
+        <DashboardHeader userName={userName} showRecovery={showRecovery} />
       )}
 
       {/* Cycle Log Modal */}

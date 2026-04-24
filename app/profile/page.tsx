@@ -17,6 +17,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [userName, setUserName] = useState<string>('');
+  const [showRecovery, setShowRecovery] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -35,6 +36,9 @@ export default function ProfilePage() {
         } else if (user.email) {
           setUserName(user.email.split('@')[0]);
         }
+
+        // Determine if user is in postpartum stage
+        setShowRecovery(userProfile?.currentStage === 'postpartum');
       } catch (error) {
         console.error('Error loading profile:', error);
       } finally {
@@ -68,7 +72,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50">
       {/* Dashboard Header - Same as other pages */}
-      <DashboardHeader userName={userName} />
+      <DashboardHeader userName={userName} showRecovery={showRecovery} />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">
