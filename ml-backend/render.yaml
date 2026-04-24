@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: mompulse-ml-backend
+    runtime: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: python period_tracker_ml.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: PORT
+        value: 5050
