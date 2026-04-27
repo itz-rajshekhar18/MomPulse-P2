@@ -47,6 +47,13 @@ A comprehensive maternal health platform that supports women through their entir
 - **Group Sessions**: Join collective workshops and seminars
 - **Flexible Plans**: Free and premium membership options
 
+### 👨‍💼 Admin Panel
+- **Dashboard Overview**: Real-time statistics and platform metrics
+- **Doctor Management**: Add, edit, and manage healthcare providers
+- **Consultation Tracking**: Monitor scheduled appointments and sessions
+- **Analytics**: Track user engagement, bookings, and revenue
+- **User Management**: Oversee platform users and their activities
+
 ## 🛠️ Tech Stack
 
 ### Frontend
@@ -94,7 +101,8 @@ mompulse/
 │   ├── ai-assistant/             # AI chat interface
 │   ├── insights/                 # Fertility insights
 │   ├── recovery/                 # Recovery tracking
-│   └── profile/                  # User profile
+│   ├── profile/                  # User profile
+│   └── admin/                    # Admin panel
 ├── components/                   # React components
 │   ├── dashboard/                # Dashboard components
 │   ├── community/                # Community components
@@ -103,6 +111,7 @@ mompulse/
 │   ├── ai-assistant/             # AI Assistant components
 │   ├── insights/                 # Insights components
 │   ├── profile/                  # Profile components
+│   ├── admin/                    # Admin panel components
 │   └── animations/               # Animation components
 ├── lib/                          # Utility libraries
 │   ├── firebase.ts               # Firebase configuration
@@ -178,6 +187,12 @@ mompulse/
    ```
    
    Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+6. **Access Admin Panel** (Optional)
+   
+   Navigate to [http://localhost:3000/admin](http://localhost:3000/admin)
+   
+   Note: Admin role check needs to be implemented. See [ADMIN_PANEL.md](./ADMIN_PANEL.md) for setup.
 
 ## 🤖 ML Backend Setup
 
@@ -347,6 +362,7 @@ npm run deploy:rules
 - [ML Backend Deployment](./ML_BACKEND_DEPLOYMENT.md)
 - [Quick Start ML Predictions](./QUICK_START_ML_PREDICTIONS.md)
 - [Animation Guide](./ANIMATION_GUIDE.md)
+- [Admin Panel Guide](./ADMIN_PANEL.md)
 
 ## 🤝 Contributing
 

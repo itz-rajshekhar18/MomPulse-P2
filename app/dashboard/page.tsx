@@ -16,6 +16,12 @@ export default function DashboardPage() {
       return;
     }
 
+    // Check if user is admin and redirect to admin panel
+    if (user.email === 'admin@admin.com') {
+      router.push('/admin');
+      return;
+    }
+
     // Load user's onboarding data and redirect to appropriate dashboard
     const loadUserData = async () => {
       try {

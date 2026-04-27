@@ -15,6 +15,7 @@ export interface UserProfile {
   email: string;
   displayName?: string;
   photoURL?: string;
+  role?: 'user' | 'admin' | 'doctor'; // User role for access control
   currentStage?: 'planning' | 'postpartum' | 'pregnancy' | 'period';
   age?: number;
   onboardingCompleted?: boolean;
@@ -1074,4 +1075,366 @@ export async function getTopContributors(
   });
 
   return profiles;
+}
+
+// Content Management interfaces
+export type ContentSection = 'period' | 'pre-pregnancy' | 'pregnancy' | 'postpartum' | 'general';
+export type ContentCategory = 'nutrition' | 'mental-health' | 'sleep' | 'movement' | 'recovery' | 'health' | 'mindfulness';
+
+export interface Article {
+  id: string;
+  title: string;
+  category: ContentCategory;
+  section: ContentSection;
+  content: string;
+  excerpt?: string;
+  readTime?: number;
+  author?: string;
+  tags?: string[];
+  featuredImage?: string;
+  status: 'published' | 'draft';
+  views: number;
+  likes: number;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface Video {
+  id: string;
+  title: string;
+  category: ContentCategory;
+  section: ContentSection;
+  description?: string;
+  videoUrl: string;
+  thumbnailUrl?: string;
+  duration?: string;
+  instructor?: string;
+  tags?: string[];
+  status: 'published' | 'draft';
+  views: number;
+  likes: number;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+// Create an article
+export async function createArticle(
+  articleData: Omit<Article, 'id' | 'views' | 'likes' | 'createdAt' | 'updatedAt'>
+): Promise<string> {
+  const articlesRef = collection(db, 'content', 'articles', 'items');
+  const { addDoc } = await import('firebase/firestore');
+  
+  const docRef = await addDoc(articlesRef, {
+    ...articleData,
+    views: 0,
+    likes: 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  return docRef.id;
+}
+
+// Create a video
+export async function createVideo(
+  videoData: Omit<Video, 'id' | 'views' | 'likes' | 'createdAt' | 'updatedAt'>
+): Promise<string> {
+  const videosRef = collection(db, 'content', 'videos', 'items');
+  const { addDoc } = await import('firebase/firestore');
+  
+  const docRef = await addDoc(videosRef, {
+    ...videoData,
+    views: 0,
+    likes: 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  return docRef.id;
+}
+
+// Get articles by section
+export async function getArticlesBySection(
+  section: ContentSection,
+  limitCount: number = 20
+): Promise<Article[]> {
+  const articlesRef = collection(db, 'content', 'articles', 'items');
+  const { getDocs, query, where, orderBy, limit } = await import('firebase/firestore');
+  
+  const q = query(
+    articlesRef,
+    where('section', '==', section),
+    where('status', '==', 'published'),
+    orderBy('createdAt', 'desc'),
+    limit(limitCount)
+  );
+  const querySnapshot = await getDocs(q);
+
+  const articles: Article[] = [];
+  querySnapshot.forEach((doc) => {
+    articles.push({
+      id: doc.id,
+      ...doc.data(),
+    } as Article);
+  });
+
+  return articles;
+}
+
+// Get videos by section
+export async function getVideosBySection(
+  section: ContentSection,
+  limitCount: number = 20
+): Promise<Video[]> {
+  const videosRef = collection(db, 'content', 'videos', 'items');
+  const { getDocs, query, where, orderBy, limit } = await import('firebase/firestore');
+  
+  const q = query(
+    videosRef,
+    where('section', '==', section),
+    where('status', '==', 'published'),
+    orderBy('createdAt', 'desc'),
+    limit(limitCount)
+  );
+  const querySnapshot = await getDocs(q);
+
+  const videos: Video[] = [];
+  querySnapshot.forEach((doc) => {
+    videos.push({
+      id: doc.id,
+      ...doc.data(),
+    } as Video);
+  });
+
+  return videos;
+}
+
+// Get all articles (for admin)
+export async function getAllArticles(): Promise<Article[]> {
+  const articlesRef = collection(db, 'content', 'articles', 'items');
+  const { getDocs, query, orderBy } = await import('firebase/firestore');
+  
+  const q = query(articlesRef, orderBy('createdAt', 'desc'));
+  const querySnapshot = await getDocs(q);
+
+  const articles: Article[] = [];
+  querySnapshot.forEach((doc) => {
+    articles.push({
+      id: doc.id,
+      ...doc.data(),
+    } as Article);
+  });
+
+  return articles;
+}
+
+// Get all videos (for admin)
+export async function getAllVideos(): Promise<Video[]> {
+  const videosRef = collection(db, 'content', 'videos', 'items');
+  const { getDocs, query, orderBy } = await import('firebase/firestore');
+  
+  const q = query(videosRef, orderBy('createdAt', 'desc'));
+  const querySnapshot = await getDocs(q);
+
+  const videos: Video[] = [];
+  querySnapshot.forEach((doc) => {
+    videos.push({
+      id: doc.id,
+      ...doc.data(),
+    } as Video);
+  });
+
+  return videos;
+}
+
+// Update article
+export async function updateArticle(
+  articleId: string,
+  updates: Partial<Omit<Article, 'id' | 'createdAt'>>
+): Promise<void> {
+  const articleRef = doc(db, 'content', 'articles', 'items', articleId);
+  
+  await updateDoc(articleRef, {
+    ...updates,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// Update video
+export async function updateVideo(
+  videoId: string,
+  updates: Partial<Omit<Video, 'id' | 'createdAt'>>
+): Promise<void> {
+  const videoRef = doc(db, 'content', 'videos', 'items', videoId);
+  
+  await updateDoc(videoRef, {
+    ...updates,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// Delete article
+export async function deleteArticle(articleId: string): Promise<void> {
+  const articleRef = doc(db, 'content', 'articles', 'items', articleId);
+  const { deleteDoc } = await import('firebase/firestore');
+  
+  await deleteDoc(articleRef);
+}
+
+// Delete video
+export async function deleteVideo(videoId: string): Promise<void> {
+  const videoRef = doc(db, 'content', 'videos', 'items', videoId);
+  const { deleteDoc } = await import('firebase/firestore');
+  
+  await deleteDoc(videoRef);
+}
+
+// Increment article views
+export async function incrementArticleViews(articleId: string): Promise<void> {
+  const articleRef = doc(db, 'content', 'articles', 'items', articleId);
+  const { increment } = await import('firebase/firestore');
+  
+  await updateDoc(articleRef, {
+    views: increment(1),
+  });
+}
+
+// Increment video views
+export async function incrementVideoViews(videoId: string): Promise<void> {
+  const videoRef = doc(db, 'content', 'videos', 'items', videoId);
+  const { increment } = await import('firebase/firestore');
+  
+  await updateDoc(videoRef, {
+    views: increment(1),
+  });
+}
+
+// Doctors and Consultations interfaces
+export interface Doctor {
+  id: string;
+  name: string;
+  title: string;
+  specialty: string;
+  experience: string;
+  rating: number;
+  photoURL?: string;
+  email?: string;
+  phone?: string;
+  availability?: string[];
+  status: 'active' | 'away';
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface Session {
+  id: string;
+  title: string;
+  description?: string;
+  date: string;
+  time: string;
+  duration?: number;
+  attendees: number;
+  maxAttendees?: number;
+  instructor?: string;
+  category: string;
+  color: 'pink' | 'green' | 'purple' | 'blue' | 'teal';
+  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+// Get all doctors
+export async function getAllDoctors(): Promise<Doctor[]> {
+  const doctorsRef = collection(db, 'doctors');
+  const { getDocs, query, where, orderBy } = await import('firebase/firestore');
+  
+  const q = query(doctorsRef, where('status', '==', 'active'), orderBy('rating', 'desc'));
+  const querySnapshot = await getDocs(q);
+
+  const doctors: Doctor[] = [];
+  querySnapshot.forEach((doc) => {
+    doctors.push({
+      id: doc.id,
+      ...doc.data(),
+    } as Doctor);
+  });
+
+  return doctors;
+}
+
+// Get upcoming sessions
+export async function getUpcomingSessions(limitCount: number = 10): Promise<Session[]> {
+  const sessionsRef = collection(db, 'sessions');
+  const { getDocs, query, where, orderBy, limit } = await import('firebase/firestore');
+  
+  const q = query(
+    sessionsRef,
+    where('status', '==', 'upcoming'),
+    orderBy('date', 'asc'),
+    limit(limitCount)
+  );
+  const querySnapshot = await getDocs(q);
+
+  const sessions: Session[] = [];
+  querySnapshot.forEach((doc) => {
+    sessions.push({
+      id: doc.id,
+      ...doc.data(),
+    } as Session);
+  });
+
+  return sessions;
+}
+
+// Create doctor (admin only)
+export async function createDoctor(
+  doctorData: Omit<Doctor, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<string> {
+  const doctorsRef = collection(db, 'doctors');
+  const { addDoc } = await import('firebase/firestore');
+  
+  const docRef = await addDoc(doctorsRef, {
+    ...doctorData,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  return docRef.id;
+}
+
+// Create session (admin only)
+export async function createSession(
+  sessionData: Omit<Session, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<string> {
+  const sessionsRef = collection(db, 'sessions');
+  const { addDoc } = await import('firebase/firestore');
+  
+  const docRef = await addDoc(sessionsRef, {
+    ...sessionData,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  return docRef.id;
+}
+
+// Update doctor
+export async function updateDoctor(
+  doctorId: string,
+  updates: Partial<Omit<Doctor, 'id' | 'createdAt'>>
+): Promise<void> {
+  const doctorRef = doc(db, 'doctors', doctorId);
+  
+  await updateDoc(doctorRef, {
+    ...updates,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// Delete doctor
+export async function deleteDoctor(doctorId: string): Promise<void> {
+  const doctorRef = doc(db, 'doctors', doctorId);
+  const { deleteDoc } = await import('firebase/firestore');
+  
+  await deleteDoc(doctorRef);
 }

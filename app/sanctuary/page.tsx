@@ -3,10 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { getUserProfile, getOnboardingData } from '@/lib/firestore';
+import { 
+  getUserProfile, 
+  getOnboardingData, 
+  getArticlesBySection, 
+  getVideosBySection,
+  Article,
+  Video,
+  ContentSection
+} from '@/lib/firestore';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import PeriodTrackerHeader from '@/components/dashboard/PeriodTrackerHeader';
-import BottomNavigation from '@/components/dashboard/BottomNavigation';
 import FeaturedArticle from '@/components/sanctuary/FeaturedArticle';
 import CategoryPills from '@/components/sanctuary/CategoryPills';
 import PillarCard from '@/components/sanctuary/PillarCard';
@@ -24,6 +31,9 @@ export default function SanctuaryPage() {
   const [activeCategory, setActiveCategory] = useState('All Stories');
   const [isPeriodTracker, setIsPeriodTracker] = useState(false);
   const [showRecovery, setShowRecovery] = useState(false);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [userSection, setUserSection] = useState<ContentSection>('general');
 
   const categories = [
     'All Stories',
@@ -41,88 +51,40 @@ export default function SanctuaryPage() {
     { icon: '🧘', title: 'Movement', color: 'teal' },
   ];
 
-  const articles = [
-    {
-      category: 'NUTRITION',
-      title: 'The Anti-Inflammatory Kitchen: Top 10 Essentials',
-      readTime: '8 min',
-      likes: '1.2k',
-      icon: '🥗',
-      bgColor: 'bg-green-100',
-    },
-    {
-      category: 'SLEEP SCIENCE',
-      title: 'Circadian Rhythms & Post-Partum Hormones',
-      description: 'Understanding the interplay and that dictates your sleep patterns during the first year of motherhood.',
-      readTime: '6 min',
-      likes: '856',
-      author: 'Dr. Sarah Jenkins',
-      authorAvatar: '👩‍⚕️',
-      bgColor: 'bg-blue-100',
-    },
-    {
-      category: 'MENTAL HEALTH',
-      title: 'Micro-Meditations: Finding 5 Minutes of Zen',
-      readTime: '5 min',
-      likes: '1.5k',
-      icon: '🧘',
-      bgColor: 'bg-purple-100',
-    },
-    {
-      category: 'NUTRITION',
-      title: 'Postpartum Nutrition: Healing Foods for Recovery',
-      description: 'Essential nutrients and meal ideas to support your body during the fourth trimester.',
-      readTime: '10 min',
-      likes: '2.1k',
-      author: 'Emma Rodriguez',
-      bgColor: 'bg-orange-100',
-    },
-    {
-      category: 'MOVEMENT',
-      title: 'Gentle Yoga for New Mothers',
-      readTime: '7 min',
-      likes: '943',
-      icon: '🤸‍♀️',
-      bgColor: 'bg-teal-100',
-    },
-    {
-      category: 'SLEEP',
-      title: 'Sleep Training: Evidence-Based Approaches',
-      description: 'What the research says about different sleep training methods and finding what works for your family.',
-      readTime: '12 min',
-      likes: '1.8k',
-      author: 'Dr. Michael Chen',
-      authorAvatar: '👨‍⚕️',
-      bgColor: 'bg-indigo-100',
-    },
-  ];
+  // Helper function to map article data to ArticleCard props
+  const mapArticleToCard = (article: Article) => {
+    // Determine background color based on category
+    const bgColorMap: Record<string, string> = {
+      'nutrition': 'bg-green-100',
+      'mental-health': 'bg-purple-100',
+      'sleep': 'bg-blue-100',
+      'movement': 'bg-teal-100',
+      'recovery': 'bg-orange-100',
+      'health': 'bg-pink-100',
+      'mindfulness': 'bg-indigo-100',
+    };
 
-  const videos = [
-    {
-      title: '10-Minute Morning Yoga for Pregnancy',
-      duration: '10:24',
-      views: '45k',
-      category: 'MOVEMENT',
-    },
-    {
-      title: 'Breathing Techniques for Labor',
-      duration: '8:15',
-      views: '32k',
-      category: 'MINDSET',
-    },
-    {
-      title: 'Meal Prep for New Moms',
-      duration: '15:30',
-      views: '28k',
-      category: 'NUTRITION',
-    },
-    {
-      title: 'Postpartum Core Strengthening',
-      duration: '12:45',
-      views: '38k',
-      category: 'RECOVERY',
-    },
-  ];
+    return {
+      category: article.category.toUpperCase().replace('-', ' '),
+      title: article.title,
+      description: article.excerpt,
+      readTime: article.readTime ? `${article.readTime} min` : '5 min',
+      likes: article.likes > 0 ? article.likes.toString() : '0',
+      author: article.author,
+      icon: article.category === 'nutrition' ? '🥗' : article.category === 'movement' ? '🤸‍♀️' : undefined,
+      bgColor: bgColorMap[article.category] || 'bg-gray-100',
+    };
+  };
+
+  // Helper function to map video data to VideoCard props
+  const mapVideoToCard = (video: Video) => {
+    return {
+      title: video.title,
+      duration: video.duration || '0:00',
+      views: video.views > 0 ? `${(video.views / 1000).toFixed(0)}k` : '0',
+      category: video.category.toUpperCase().replace('-', ' '),
+    };
+  };
 
   useEffect(() => {
     if (!user) {
@@ -145,6 +107,28 @@ export default function SanctuaryPage() {
 
         // Determine if user is in postpartum stage
         setShowRecovery(profile?.currentStage === 'postpartum');
+
+        // Determine user's section based on their stage
+        let section: ContentSection = 'general';
+        if (profile?.currentStage === 'period') {
+          section = 'period';
+        } else if (profile?.currentStage === 'planning') {
+          section = 'pre-pregnancy';
+        } else if (profile?.currentStage === 'pregnancy') {
+          section = 'pregnancy';
+        } else if (profile?.currentStage === 'postpartum') {
+          section = 'postpartum';
+        }
+        setUserSection(section);
+
+        // Fetch articles and videos for user's section
+        const [articlesData, videosData] = await Promise.all([
+          getArticlesBySection(section, 6),
+          getVideosBySection(section, 4)
+        ]);
+
+        setArticles(articlesData);
+        setVideos(videosData);
       } catch (error) {
         console.error('Error loading user data:', error);
       } finally {
@@ -183,7 +167,7 @@ export default function SanctuaryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 pb-20 md:pb-0 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 relative overflow-hidden">
       {/* Floating Leaves Animation */}
       <FloatingLeaves />
 
@@ -265,9 +249,15 @@ export default function SanctuaryPage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {articles.map((article, index) => (
-              <ArticleCard key={index} {...article} />
-            ))}
+            {articles.length > 0 ? (
+              articles.map((article, index) => (
+                <ArticleCard key={article.id} {...mapArticleToCard(article)} />
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-8 text-gray-500">
+                No articles available for your stage yet. Check back soon!
+              </div>
+            )}
           </div>
         </motion.div>
 
@@ -288,18 +278,21 @@ export default function SanctuaryPage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {videos.map((video, index) => (
-              <VideoCard key={index} {...video} />
-            ))}
+            {videos.length > 0 ? (
+              videos.map((video, index) => (
+                <VideoCard key={video.id} {...mapVideoToCard(video)} />
+              ))
+            ) : (
+              <div className="col-span-4 text-center py-8 text-gray-500">
+                No videos available for your stage yet. Check back soon!
+              </div>
+            )}
           </div>
         </motion.div>
 
         {/* Newsletter Banner */}
         <NewsletterBanner />
       </main>
-
-      {/* Bottom Navigation for Mobile */}
-      <BottomNavigation />
     </div>
   );
 }

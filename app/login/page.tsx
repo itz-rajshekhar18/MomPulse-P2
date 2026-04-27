@@ -21,7 +21,13 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password);
-      router.push('/dashboard'); // Redirect to dashboard after login
+      
+      // Check if user is admin and redirect accordingly
+      if (email === 'admin@admin.com') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');
     } finally {

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { getUserProfile } from '@/lib/firestore';
+import { getUserProfile, getAllDoctors, getUpcomingSessions, Doctor, Session } from '@/lib/firestore';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import HeroSection from '@/components/consultation/HeroSection';
 import PricingCard from '@/components/consultation/PricingCard';
@@ -17,6 +17,8 @@ export default function ConsultationPage() {
   const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [showRecovery, setShowRecovery] = useState(false);
+  const [specialists, setSpecialists] = useState<Doctor[]>([]);
+  const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -37,6 +39,15 @@ export default function ConsultationPage() {
 
         // Determine if user is in postpartum stage
         setShowRecovery(profile?.currentStage === 'postpartum');
+
+        // Fetch doctors and sessions from Firestore
+        const [doctorsData, sessionsData] = await Promise.all([
+          getAllDoctors(),
+          getUpcomingSessions(3)
+        ]);
+
+        setSpecialists(doctorsData.slice(0, 3)); // Show only first 3 doctors
+        setUpcomingSessions(sessionsData);
       } catch (error) {
         console.error('Error loading user data:', error);
       } finally {
@@ -69,54 +80,6 @@ export default function ConsultationPage() {
     '1-on-1 Monthly Specialist',
     'Personalized Care Plans',
     'Priority Booking',
-  ];
-
-  const specialists = [
-    {
-      name: 'Dr. Elaina Rossi',
-      title: 'OB-GYN Specialist',
-      specialty: 'Expert in high-risk pregnancies and prenatal care with a compassionate approach to maternal health.',
-      experience: '18 Years of Experience',
-      rating: 4.9,
-    },
-    {
-      name: 'Marcus Chen',
-      title: 'Certified Midwife',
-      specialty: 'Specializing in natural birth support and holistic maternal wellness throughout pregnancy.',
-      experience: '12 Years of Experience',
-      rating: 5.0,
-    },
-    {
-      name: 'Sarah Jenkins',
-      title: 'Lactation Consultant',
-      specialty: 'Dedicated to helping new mothers navigate breastfeeding challenges with expert guidance and support.',
-      experience: '10 Years of Experience',
-      rating: 4.8,
-    },
-  ];
-
-  const upcomingSessions = [
-    {
-      title: 'Gentle Prenatal Yoga & Bonding',
-      date: '24 Jan',
-      time: '10:00 AM',
-      attendees: 24,
-      color: 'pink' as const,
-    },
-    {
-      title: 'Nutrition for Lactation Trimester',
-      date: '27 Jan',
-      time: '2:00 PM',
-      attendees: 18,
-      color: 'green' as const,
-    },
-    {
-      title: 'Managing Postpartum Anxiety',
-      date: '02 Feb',
-      time: '6:00 PM',
-      attendees: 32,
-      color: 'purple' as const,
-    },
   ];
 
   return (
@@ -181,13 +144,23 @@ export default function ConsultationPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {specialists.map((specialist, index) => (
-              <SpecialistCard
-                key={index}
-                {...specialist}
-                delay={0.1 * (index + 1)}
-              />
-            ))}
+            {specialists.length > 0 ? (
+              specialists.map((specialist, index) => (
+                <SpecialistCard
+                  key={specialist.id}
+                  name={specialist.name}
+                  title={specialist.title}
+                  specialty={specialist.specialty}
+                  experience={specialist.experience}
+                  rating={specialist.rating}
+                  delay={0.1 * (index + 1)}
+                />
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-8 text-gray-500">
+                No specialists available at the moment.
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -205,13 +178,31 @@ export default function ConsultationPage() {
           </div>
 
           <div className="space-y-4 max-w-4xl">
-            {upcomingSessions.map((session, index) => (
-              <SessionCard
-                key={index}
-                {...session}
-                delay={0.1 * (index + 1)}
-              />
-            ))}
+            {upcomingSessions.length > 0 ? (
+              upcomingSessions.map((session, index) => {
+                // Map session color to SessionCard accepted colors
+                const cardColor: 'pink' | 'green' | 'purple' = 
+                  session.color === 'pink' || session.color === 'green' || session.color === 'purple'
+                    ? session.color
+                    : 'purple'; // Default to purple for other colors
+                
+                return (
+                  <SessionCard
+                    key={session.id}
+                    title={session.title}
+                    date={session.date}
+                    time={session.time}
+                    attendees={session.attendees}
+                    color={cardColor}
+                    delay={0.1 * (index + 1)}
+                  />
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No upcoming sessions scheduled at the moment.
+              </div>
+            )}
           </div>
         </div>
       </section>
