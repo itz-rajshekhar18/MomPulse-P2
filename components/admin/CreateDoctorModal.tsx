@@ -38,9 +38,9 @@ export default function CreateDoctorModal({ isOpen, onClose, onSuccess }: Create
         specialty: formData.specialty,
         experience: formData.experience,
         rating: parseFloat(formData.rating),
-        email: formData.email || undefined,
-        phone: formData.phone || undefined,
-        photoURL: formData.photoURL || undefined,
+        ...(formData.email && { email: formData.email }),
+        ...(formData.phone && { phone: formData.phone }),
+        ...(formData.photoURL && { photoURL: formData.photoURL }),
         availability: [],
         status: formData.status,
       };

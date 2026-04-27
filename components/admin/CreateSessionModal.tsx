@@ -36,13 +36,13 @@ export default function CreateSessionModal({ isOpen, onClose, onSuccess }: Creat
     try {
       const sessionData = {
         title: formData.title,
-        description: formData.description || undefined,
+        ...(formData.description && { description: formData.description }),
         date: formData.date,
         time: formData.time,
-        duration: formData.duration ? parseInt(formData.duration) : undefined,
+        ...(formData.duration && { duration: parseInt(formData.duration) }),
         attendees: parseInt(formData.attendees),
-        maxAttendees: formData.maxAttendees ? parseInt(formData.maxAttendees) : undefined,
-        instructor: formData.instructor || undefined,
+        ...(formData.maxAttendees && { maxAttendees: parseInt(formData.maxAttendees) }),
+        ...(formData.instructor && { instructor: formData.instructor }),
         category: formData.category,
         color: formData.color,
         status: formData.status,
