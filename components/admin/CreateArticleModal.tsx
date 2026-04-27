@@ -42,11 +42,11 @@ export default function CreateArticleModal({ isOpen, onClose, onSuccess }: Creat
         category: formData.category as ContentCategory,
         section: formData.section as ContentSection,
         content: formData.content,
-        excerpt: formData.excerpt || undefined,
-        readTime: formData.readTime ? parseInt(formData.readTime) : undefined,
-        author: formData.author || undefined,
-        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : undefined,
-        featuredImage: formData.featuredImage || undefined,
+        ...(formData.excerpt && { excerpt: formData.excerpt }),
+        ...(formData.readTime && { readTime: parseInt(formData.readTime) }),
+        ...(formData.author && { author: formData.author }),
+        ...(formData.tags && { tags: formData.tags.split(',').map(tag => tag.trim()) }),
+        ...(formData.featuredImage && { featuredImage: formData.featuredImage }),
         status: formData.status as 'published' | 'draft',
       };
 

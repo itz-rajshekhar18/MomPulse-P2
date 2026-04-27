@@ -41,12 +41,12 @@ export default function CreateVideoModal({ isOpen, onClose, onSuccess }: CreateV
         title: formData.title,
         category: formData.category as ContentCategory,
         section: formData.section as ContentSection,
-        description: formData.description || undefined,
+        ...(formData.description && { description: formData.description }),
         videoUrl: formData.videoUrl,
-        thumbnailUrl: formData.thumbnailUrl || undefined,
-        duration: formData.duration || undefined,
-        instructor: formData.instructor || undefined,
-        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : undefined,
+        ...(formData.thumbnailUrl && { thumbnailUrl: formData.thumbnailUrl }),
+        ...(formData.duration && { duration: formData.duration }),
+        ...(formData.instructor && { instructor: formData.instructor }),
+        ...(formData.tags && { tags: formData.tags.split(',').map(tag => tag.trim()) }),
         status: formData.status as 'published' | 'draft',
       };
 
