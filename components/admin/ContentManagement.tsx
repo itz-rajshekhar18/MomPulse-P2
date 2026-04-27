@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { getAllArticles, getAllVideos, Article, Video } from '@/lib/firestore';
+import { getAllArticles, getAllVideos, deleteArticle, deleteVideo, Article, Video } from '@/lib/firestore';
 import CreateArticleModal from './CreateArticleModal';
 import CreateVideoModal from './CreateVideoModal';
 
@@ -13,6 +13,7 @@ export default function ContentManagement() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchContent();
@@ -42,6 +43,37 @@ export default function ContentManagement() {
   const handleVideoCreated = () => {
     setIsVideoModalOpen(false);
     fetchContent(); // Refresh the list
+  };
+
+  const handleDelete = async (id: string, type: 'article' | 'video') => {
+    if (!confirm(`Are you sure you want to delete this ${type}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setDeletingId(id);
+      
+      if (type === 'article') {
+        await deleteArticle(id);
+        setArticles(articles.filter(a => a.id !== id));
+      } else {
+        await deleteVideo(id);
+        setVideos(videos.filter(v => v.id !== id));
+      }
+      
+      console.log(`${type} deleted successfully`);
+    } catch (error) {
+      console.error(`Error deleting ${type}:`, error);
+      alert(`Failed to delete ${type}. Please try again.`);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleEdit = (id: string, type: 'article' | 'video') => {
+    // TODO: Implement edit functionality
+    // For now, just show an alert
+    alert(`Edit functionality for ${type} will be implemented soon. ID: ${id}`);
   };
 
   const filteredContents = activeTab === 'articles' ? articles : videos;
@@ -206,15 +238,29 @@ export default function ContentManagement() {
 
                 {/* Actions */}
                 <div className="col-span-1 flex items-center gap-2">
-                  <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Edit">
+                  <button 
+                    onClick={() => handleEdit(item.id, isArticle ? 'article' : 'video')}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors" 
+                    title="Edit"
+                    disabled={deletingId === item.id}
+                  >
                     <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </button>
-                  <button className="p-2 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
-                    <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                  <button 
+                    onClick={() => handleDelete(item.id, isArticle ? 'article' : 'video')}
+                    className="p-2 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                    title="Delete"
+                    disabled={deletingId === item.id}
+                  >
+                    {deletingId === item.id ? (
+                      <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    )}
                   </button>
                 </div>
               </motion.div>

@@ -2,36 +2,60 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { getAllDoctors, Doctor } from '@/lib/firestore';
+import { getAllDoctors, deleteDoctor, Doctor } from '@/lib/firestore';
 
 export default function DoctorManagement() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        console.log('Fetching doctors...');
-        const doctorsData = await getAllDoctors();
-        console.log('Doctors fetched:', doctorsData);
-        setDoctors(doctorsData);
-      } catch (error: any) {
-        console.error('Error fetching doctors:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        
-        if (error.code === 'permission-denied') {
-          console.warn('Permission denied - check if:');
-          console.warn('1. You are logged in as admin@admin.com');
-          console.warn('2. Firestore rules have been deployed');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDoctors();
   }, []);
+
+  const fetchDoctors = async () => {
+    try {
+      console.log('Fetching doctors...');
+      const doctorsData = await getAllDoctors();
+      console.log('Doctors fetched:', doctorsData);
+      setDoctors(doctorsData);
+    } catch (error: any) {
+      console.error('Error fetching doctors:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      
+      if (error.code === 'permission-denied') {
+        console.warn('Permission denied - check if:');
+        console.warn('1. You are logged in as admin@admin.com');
+        console.warn('2. Firestore rules have been deployed');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete Dr. ${name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setDeletingId(id);
+      await deleteDoctor(id);
+      setDoctors(doctors.filter(d => d.id !== id));
+      console.log('Doctor deleted successfully');
+    } catch (error) {
+      console.error('Error deleting doctor:', error);
+      alert('Failed to delete doctor. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleEdit = (id: string, name: string) => {
+    // TODO: Implement edit functionality
+    alert(`Edit functionality for Dr. ${name} will be implemented soon. ID: ${id}`);
+  };
 
   if (loading) {
     return (
@@ -116,7 +140,12 @@ export default function DoctorManagement() {
 
               {/* Actions */}
               <div className="col-span-2 flex items-center gap-2">
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <button 
+                  onClick={() => handleEdit(doctor.id, doctor.name)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Edit"
+                  disabled={deletingId === doctor.id}
+                >
                   <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
@@ -125,6 +154,20 @@ export default function DoctorManagement() {
                       d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                     />
                   </svg>
+                </button>
+                <button 
+                  onClick={() => handleDelete(doctor.id, doctor.name)}
+                  className="p-2 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Delete"
+                  disabled={deletingId === doctor.id}
+                >
+                  {deletingId === doctor.id ? (
+                    <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  )}
                 </button>
               </div>
             </motion.div>

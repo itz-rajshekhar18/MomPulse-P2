@@ -1438,3 +1438,160 @@ export async function deleteDoctor(doctorId: string): Promise<void> {
   
   await deleteDoc(doctorRef);
 }
+
+// Analytics interfaces
+export interface AdminStats {
+  activeUsers: number;
+  totalUsers: number;
+  monthlyBookings: number;
+  completedSessions: number;
+  totalSessions: number;
+  revenue: number;
+  userGrowth: number; // percentage
+  bookingGrowth: number; // percentage
+  sessionGrowth: number; // percentage
+  revenueGrowth: number; // percentage
+}
+
+// Get admin analytics/stats
+export async function getAdminStats(): Promise<AdminStats> {
+  try {
+    const { getDocs, query, where, collection: firestoreCollection, Timestamp } = await import('firebase/firestore');
+    
+    // Calculate date ranges
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+    
+    // Get total users
+    const usersRef = firestoreCollection(db, 'users');
+    const usersSnapshot = await getDocs(usersRef);
+    const totalUsers = usersSnapshot.size;
+    
+    // Get active users (users who logged in within last 30 days)
+    // For now, we'll count all users as active since we don't track last login
+    // TODO: Add lastLoginAt field to user documents
+    const activeUsers = totalUsers;
+    
+    // Get users created in last 30 days vs previous 30 days for growth calculation
+    const recentUsersQuery = query(
+      usersRef,
+      where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo))
+    );
+    const recentUsersSnapshot = await getDocs(recentUsersQuery);
+    const recentUsersCount = recentUsersSnapshot.size;
+    
+    const previousUsersQuery = query(
+      usersRef,
+      where('createdAt', '>=', Timestamp.fromDate(sixtyDaysAgo)),
+      where('createdAt', '<', Timestamp.fromDate(thirtyDaysAgo))
+    );
+    const previousUsersSnapshot = await getDocs(previousUsersQuery);
+    const previousUsersCount = previousUsersSnapshot.size;
+    
+    const userGrowth = previousUsersCount > 0 
+      ? Math.round(((recentUsersCount - previousUsersCount) / previousUsersCount) * 100)
+      : 100;
+    
+    // Get bookings/consultations
+    const bookingsRef = firestoreCollection(db, 'bookings');
+    const bookingsSnapshot = await getDocs(bookingsRef);
+    const totalBookings = bookingsSnapshot.size;
+    
+    // Get bookings in last 30 days
+    const recentBookingsQuery = query(
+      bookingsRef,
+      where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo))
+    );
+    const recentBookingsSnapshot = await getDocs(recentBookingsQuery);
+    const monthlyBookings = recentBookingsSnapshot.size;
+    
+    // Get previous month bookings for growth
+    const previousBookingsQuery = query(
+      bookingsRef,
+      where('createdAt', '>=', Timestamp.fromDate(sixtyDaysAgo)),
+      where('createdAt', '<', Timestamp.fromDate(thirtyDaysAgo))
+    );
+    const previousBookingsSnapshot = await getDocs(previousBookingsQuery);
+    const previousBookings = previousBookingsSnapshot.size;
+    
+    const bookingGrowth = previousBookings > 0
+      ? Math.round(((monthlyBookings - previousBookings) / previousBookings) * 100)
+      : 100;
+    
+    // Get sessions
+    const sessionsRef = firestoreCollection(db, 'sessions');
+    const sessionsSnapshot = await getDocs(sessionsRef);
+    const totalSessions = sessionsSnapshot.size;
+    
+    // Get completed sessions
+    const completedSessionsQuery = query(
+      sessionsRef,
+      where('status', '==', 'completed')
+    );
+    const completedSessionsSnapshot = await getDocs(completedSessionsQuery);
+    const completedSessions = completedSessionsSnapshot.size;
+    
+    // Get completed sessions in last 30 days
+    const recentCompletedQuery = query(
+      sessionsRef,
+      where('status', '==', 'completed'),
+      where('updatedAt', '>=', Timestamp.fromDate(thirtyDaysAgo))
+    );
+    const recentCompletedSnapshot = await getDocs(recentCompletedQuery);
+    const recentCompleted = recentCompletedSnapshot.size;
+    
+    // Get previous month completed sessions
+    const previousCompletedQuery = query(
+      sessionsRef,
+      where('status', '==', 'completed'),
+      where('updatedAt', '>=', Timestamp.fromDate(sixtyDaysAgo)),
+      where('updatedAt', '<', Timestamp.fromDate(thirtyDaysAgo))
+    );
+    const previousCompletedSnapshot = await getDocs(previousCompletedQuery);
+    const previousCompleted = previousCompletedSnapshot.size;
+    
+    const sessionGrowth = previousCompleted > 0
+      ? Math.round(((recentCompleted - previousCompleted) / previousCompleted) * 100)
+      : 100;
+    
+    // Calculate revenue (mock calculation based on bookings)
+    // Assuming average booking price of $50
+    const averageBookingPrice = 50;
+    const revenue = monthlyBookings * averageBookingPrice;
+    const previousRevenue = previousBookings * averageBookingPrice;
+    
+    const revenueGrowth = previousRevenue > 0
+      ? Math.round(((revenue - previousRevenue) / previousRevenue) * 100)
+      : 100;
+    
+    return {
+      activeUsers,
+      totalUsers,
+      monthlyBookings,
+      completedSessions,
+      totalSessions,
+      revenue,
+      userGrowth,
+      bookingGrowth,
+      sessionGrowth,
+      revenueGrowth,
+    };
+  } catch (error) {
+    console.error('Error fetching admin stats:', error);
+    
+    // Return default values if there's an error
+    return {
+      activeUsers: 0,
+      totalUsers: 0,
+      monthlyBookings: 0,
+      completedSessions: 0,
+      totalSessions: 0,
+      revenue: 0,
+      userGrowth: 0,
+      bookingGrowth: 0,
+      sessionGrowth: 0,
+      revenueGrowth: 0,
+    };
+  }
+}
