@@ -29,3 +29,25 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-playfair), Georgia, serif;
   font-weight: 700;
 }
+
+/* Fix input text visibility */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
+input[type="date"],
+textarea {
+  color: #1f2937 !important;
+}
+
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+input[type="tel"]::placeholder,
+input[type="url"]::placeholder,
+input[type="number"]::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important;
+}

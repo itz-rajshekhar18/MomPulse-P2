@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { savePeriodPrediction } from '@/lib/firestore';
+import { savePeriodPredictionAdmin } from '@/lib/firebaseAdmin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       };
 
       // Save prediction to Firestore
-      await savePeriodPrediction(userId, mappedPrediction);
+      await savePeriodPredictionAdmin(userId, mappedPrediction);
 
       return NextResponse.json({
         success: true,
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       const fallbackPrediction = calculateFallbackPrediction(cycles);
       
       // Save fallback prediction to Firestore
-      await savePeriodPrediction(userId, fallbackPrediction);
+      await savePeriodPredictionAdmin(userId, fallbackPrediction);
 
       return NextResponse.json({
         success: true,

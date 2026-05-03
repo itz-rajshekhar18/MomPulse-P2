@@ -11,16 +11,16 @@ export default function Header() {
       </div>
       
       <nav className="hidden md:flex items-center gap-8">
-        <Link href="#" className="text-gray-600 hover:text-gray-900">
+        <Link href="/features" className="text-gray-600 hover:text-gray-900">
           Features
         </Link>
-        <Link href="#" className="text-gray-600 hover:text-gray-900">
+        <Link href="/resources" className="text-gray-600 hover:text-gray-900">
           Resources
         </Link>
-        <Link href="#" className="text-gray-600 hover:text-gray-900">
+        <Link href="/pricing" className="text-gray-600 hover:text-gray-900">
           Pricing
         </Link>
-        <Link href="#" className="text-gray-600 hover:text-gray-900">
+        <Link href="/community" className="text-gray-600 hover:text-gray-900">
           Community
         </Link>
       </nav>
