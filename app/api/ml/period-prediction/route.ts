@@ -64,8 +64,13 @@ export async function POST(request: NextRequest) {
         ]
       };
 
-      // Save prediction to Firestore
-      await savePeriodPredictionAdmin(userId, mappedPrediction);
+      // Save prediction to Firestore (optional - won't fail if credentials missing)
+      try {
+        await savePeriodPredictionAdmin(userId, mappedPrediction);
+      } catch (saveError) {
+        console.warn('Could not save prediction to Firestore:', saveError);
+        // Continue anyway - prediction still works without saving
+      }
 
       return NextResponse.json({
         success: true,
@@ -79,8 +84,13 @@ export async function POST(request: NextRequest) {
       // Fallback: Calculate simple prediction based on averages
       const fallbackPrediction = calculateFallbackPrediction(cycles);
       
-      // Save fallback prediction to Firestore
-      await savePeriodPredictionAdmin(userId, fallbackPrediction);
+      // Save fallback prediction to Firestore (optional)
+      try {
+        await savePeriodPredictionAdmin(userId, fallbackPrediction);
+      } catch (saveError) {
+        console.warn('Could not save fallback prediction to Firestore:', saveError);
+        // Continue anyway - prediction still works without saving
+      }
 
       return NextResponse.json({
         success: true,
