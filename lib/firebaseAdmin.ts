@@ -12,19 +12,18 @@ async function initializeFirebaseAdmin() {
 
   try {
     const admin = await import('firebase-admin');
-    const { initializeApp, getApps, cert } = admin;
     const { getFirestore } = await import('firebase-admin/firestore');
     const { getAuth } = await import('firebase-admin/auth');
 
     let app: any;
 
     // Initialize Firebase Admin
-    if (!getApps().length) {
+    if (!admin.apps || admin.apps.length === 0) {
       if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
         // Production: Use service account key from environment variable
         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-        app = initializeApp({
-          credential: cert(serviceAccount),
+        app = admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
         });
       } else if (
         process.env.FIREBASE_PROJECT_ID &&
@@ -32,8 +31,8 @@ async function initializeFirebaseAdmin() {
         process.env.FIREBASE_PRIVATE_KEY
       ) {
         // Alternative: Use individual environment variables
-        app = initializeApp({
-          credential: cert({
+        app = admin.initializeApp({
+          credential: admin.credential.cert({
             projectId: process.env.FIREBASE_PROJECT_ID,
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
             privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
@@ -42,10 +41,10 @@ async function initializeFirebaseAdmin() {
       } else {
         // Development: Initialize without credentials
         console.warn('Firebase Admin: No service account credentials found. Using default credentials.');
-        app = initializeApp();
+        app = admin.initializeApp();
       }
     } else {
-      app = getApps()[0];
+      app = admin.apps[0];
     }
 
     adminDb = getFirestore(app);
