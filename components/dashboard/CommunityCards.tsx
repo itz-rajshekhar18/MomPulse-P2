@@ -4,7 +4,11 @@ import { ArrowRight, Flame } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
-export default function CommunityCards() {
+interface CommunityCardsProps {
+  section?: 'period' | 'pre-pregnancy' | 'postpartum' | 'general';
+}
+
+export default function CommunityCards({ section = 'general' }: CommunityCardsProps) {
   const router = useRouter();
 
   return (
@@ -46,7 +50,7 @@ export default function CommunityCards() {
           </p>
 
           <button
-            onClick={() => router.push('/community')}
+            onClick={() => router.push(`/community?section=${section}`)}
             className="px-6 py-3 bg-gradient-to-r from-teal-400 to-cyan-400 text-slate-900 rounded-xl font-semibold hover:shadow-lg transition-all inline-flex items-center space-x-2"
           >
             <span>Join Chat</span>

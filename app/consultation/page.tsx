@@ -148,6 +148,7 @@ export default function ConsultationPage() {
               specialists.map((specialist, index) => (
                 <SpecialistCard
                   key={specialist.id}
+                  id={specialist.id}
                   name={specialist.name}
                   title={specialist.title}
                   specialty={specialist.specialty}

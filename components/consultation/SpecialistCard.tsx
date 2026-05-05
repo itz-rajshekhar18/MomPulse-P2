@@ -1,8 +1,10 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
 interface SpecialistCardProps {
+  id: string;
   name: string;
   title: string;
   specialty: string;
@@ -13,6 +15,7 @@ interface SpecialistCardProps {
 }
 
 export default function SpecialistCard({
+  id,
   name,
   title,
   specialty,
@@ -21,6 +24,12 @@ export default function SpecialistCard({
   image,
   delay = 0,
 }: SpecialistCardProps) {
+  const router = useRouter();
+
+  const handleBooking = () => {
+    router.push(`/booking?doctorId=${id}`);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -49,7 +58,10 @@ export default function SpecialistCard({
         <p className="text-gray-600 text-sm mb-4 leading-relaxed">{specialty}</p>
         <p className="text-gray-500 text-sm mb-6">{experience}</p>
 
-        <button className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full font-medium hover:shadow-lg transition-all duration-300 group-hover:scale-105">
+        <button 
+          onClick={handleBooking}
+          className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full font-medium hover:shadow-lg transition-all duration-300 group-hover:scale-105"
+        >
           Book Consultation
         </button>
       </div>

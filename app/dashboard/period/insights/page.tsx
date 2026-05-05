@@ -368,7 +368,7 @@ export default function InsightsPage() {
               </div>
 
               <button
-                onClick={() => router.push('/community')}
+                onClick={() => router.push('/community?section=period')}
                 className="w-full py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-colors"
               >
                 Join Discussion

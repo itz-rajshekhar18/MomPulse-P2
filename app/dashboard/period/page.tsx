@@ -98,7 +98,7 @@ export default function PeriodTrackerDashboard() {
 
             {/* Community Cards */}
             <AnimatedCard delay={0.3}>
-              <CommunityCards />
+              <CommunityCards section="period" />
             </AnimatedCard>
           </div>
 

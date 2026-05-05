@@ -1345,45 +1345,69 @@ export interface Session {
 
 // Get all doctors
 export async function getAllDoctors(): Promise<Doctor[]> {
-  const doctorsRef = collection(db, 'doctors');
-  const { getDocs, query, where, orderBy } = await import('firebase/firestore');
-  
-  const q = query(doctorsRef, where('status', '==', 'active'), orderBy('rating', 'desc'));
-  const querySnapshot = await getDocs(q);
+  try {
+    const doctorsRef = collection(db, 'doctors');
+    const { getDocs } = await import('firebase/firestore');
+    
+    // Simple query without where/orderBy to avoid index requirements
+    const querySnapshot = await getDocs(doctorsRef);
 
-  const doctors: Doctor[] = [];
-  querySnapshot.forEach((doc) => {
-    doctors.push({
-      id: doc.id,
-      ...doc.data(),
-    } as Doctor);
-  });
+    const doctors: Doctor[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      // Filter active doctors in code instead of query
+      if (data.status === 'active') {
+        doctors.push({
+          id: doc.id,
+          ...data,
+        } as Doctor);
+      }
+    });
 
-  return doctors;
+    // Sort by rating in code instead of query
+    doctors.sort((a, b) => b.rating - a.rating);
+
+    return doctors;
+  } catch (error) {
+    console.error('Error fetching doctors:', error);
+    return [];
+  }
 }
 
 // Get upcoming sessions
 export async function getUpcomingSessions(limitCount: number = 10): Promise<Session[]> {
-  const sessionsRef = collection(db, 'sessions');
-  const { getDocs, query, where, orderBy, limit } = await import('firebase/firestore');
-  
-  const q = query(
-    sessionsRef,
-    where('status', '==', 'upcoming'),
-    orderBy('date', 'asc'),
-    limit(limitCount)
-  );
-  const querySnapshot = await getDocs(q);
+  try {
+    const sessionsRef = collection(db, 'sessions');
+    const { getDocs } = await import('firebase/firestore');
+    
+    // Simple query without where/orderBy to avoid index requirements
+    const querySnapshot = await getDocs(sessionsRef);
 
-  const sessions: Session[] = [];
-  querySnapshot.forEach((doc) => {
-    sessions.push({
-      id: doc.id,
-      ...doc.data(),
-    } as Session);
-  });
+    const sessions: Session[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      // Filter upcoming sessions in code instead of query
+      if (data.status === 'upcoming') {
+        sessions.push({
+          id: doc.id,
+          ...data,
+        } as Session);
+      }
+    });
 
-  return sessions;
+    // Sort by date in code instead of query
+    sessions.sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateA - dateB;
+    });
+
+    // Limit results in code
+    return sessions.slice(0, limitCount);
+  } catch (error) {
+    console.error('Error fetching sessions:', error);
+    return [];
+  }
 }
 
 // Create doctor (admin only)
@@ -1456,114 +1480,100 @@ export interface AdminStats {
 // Get admin analytics/stats
 export async function getAdminStats(): Promise<AdminStats> {
   try {
-    const { getDocs, query, where, collection: firestoreCollection, Timestamp } = await import('firebase/firestore');
+    const { getDocs, collection: firestoreCollection, Timestamp } = await import('firebase/firestore');
     
     // Calculate date ranges
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
     
-    // Get total users
+    // Get all users and filter in code
     const usersRef = firestoreCollection(db, 'users');
     const usersSnapshot = await getDocs(usersRef);
     const totalUsers = usersSnapshot.size;
+    const activeUsers = totalUsers; // Simplified - count all as active
     
-    // Get active users (users who logged in within last 30 days)
-    // For now, we'll count all users as active since we don't track last login
-    // TODO: Add lastLoginAt field to user documents
-    const activeUsers = totalUsers;
+    let recentUsersCount = 0;
+    let previousUsersCount = 0;
     
-    // Get users created in last 30 days vs previous 30 days for growth calculation
-    const recentUsersQuery = query(
-      usersRef,
-      where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo))
-    );
-    const recentUsersSnapshot = await getDocs(recentUsersQuery);
-    const recentUsersCount = recentUsersSnapshot.size;
-    
-    const previousUsersQuery = query(
-      usersRef,
-      where('createdAt', '>=', Timestamp.fromDate(sixtyDaysAgo)),
-      where('createdAt', '<', Timestamp.fromDate(thirtyDaysAgo))
-    );
-    const previousUsersSnapshot = await getDocs(previousUsersQuery);
-    const previousUsersCount = previousUsersSnapshot.size;
+    usersSnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.createdAt) {
+        // Handle both Timestamp and regular Date objects
+        const createdDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+        if (createdDate >= thirtyDaysAgo) {
+          recentUsersCount++;
+        } else if (createdDate >= sixtyDaysAgo && createdDate < thirtyDaysAgo) {
+          previousUsersCount++;
+        }
+      }
+    });
     
     const userGrowth = previousUsersCount > 0 
       ? Math.round(((recentUsersCount - previousUsersCount) / previousUsersCount) * 100)
-      : 100;
+      : recentUsersCount > 0 ? 100 : 0;
     
-    // Get bookings/consultations
+    // Get all bookings and filter in code
     const bookingsRef = firestoreCollection(db, 'bookings');
     const bookingsSnapshot = await getDocs(bookingsRef);
-    const totalBookings = bookingsSnapshot.size;
     
-    // Get bookings in last 30 days
-    const recentBookingsQuery = query(
-      bookingsRef,
-      where('createdAt', '>=', Timestamp.fromDate(thirtyDaysAgo))
-    );
-    const recentBookingsSnapshot = await getDocs(recentBookingsQuery);
-    const monthlyBookings = recentBookingsSnapshot.size;
+    let monthlyBookings = 0;
+    let previousBookings = 0;
     
-    // Get previous month bookings for growth
-    const previousBookingsQuery = query(
-      bookingsRef,
-      where('createdAt', '>=', Timestamp.fromDate(sixtyDaysAgo)),
-      where('createdAt', '<', Timestamp.fromDate(thirtyDaysAgo))
-    );
-    const previousBookingsSnapshot = await getDocs(previousBookingsQuery);
-    const previousBookings = previousBookingsSnapshot.size;
+    bookingsSnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.createdAt) {
+        // Handle both Timestamp and regular Date objects
+        const createdDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+        if (createdDate >= thirtyDaysAgo) {
+          monthlyBookings++;
+        } else if (createdDate >= sixtyDaysAgo && createdDate < thirtyDaysAgo) {
+          previousBookings++;
+        }
+      }
+    });
     
     const bookingGrowth = previousBookings > 0
       ? Math.round(((monthlyBookings - previousBookings) / previousBookings) * 100)
-      : 100;
+      : monthlyBookings > 0 ? 100 : 0;
     
-    // Get sessions
+    // Get all sessions and filter in code
     const sessionsRef = firestoreCollection(db, 'sessions');
     const sessionsSnapshot = await getDocs(sessionsRef);
     const totalSessions = sessionsSnapshot.size;
     
-    // Get completed sessions
-    const completedSessionsQuery = query(
-      sessionsRef,
-      where('status', '==', 'completed')
-    );
-    const completedSessionsSnapshot = await getDocs(completedSessionsQuery);
-    const completedSessions = completedSessionsSnapshot.size;
+    let completedSessions = 0;
+    let recentCompleted = 0;
+    let previousCompleted = 0;
     
-    // Get completed sessions in last 30 days
-    const recentCompletedQuery = query(
-      sessionsRef,
-      where('status', '==', 'completed'),
-      where('updatedAt', '>=', Timestamp.fromDate(thirtyDaysAgo))
-    );
-    const recentCompletedSnapshot = await getDocs(recentCompletedQuery);
-    const recentCompleted = recentCompletedSnapshot.size;
-    
-    // Get previous month completed sessions
-    const previousCompletedQuery = query(
-      sessionsRef,
-      where('status', '==', 'completed'),
-      where('updatedAt', '>=', Timestamp.fromDate(sixtyDaysAgo)),
-      where('updatedAt', '<', Timestamp.fromDate(thirtyDaysAgo))
-    );
-    const previousCompletedSnapshot = await getDocs(previousCompletedQuery);
-    const previousCompleted = previousCompletedSnapshot.size;
+    sessionsSnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.status === 'completed') {
+        completedSessions++;
+        if (data.updatedAt) {
+          // Handle both Timestamp and regular Date objects
+          const updatedDate = data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt);
+          if (updatedDate >= thirtyDaysAgo) {
+            recentCompleted++;
+          } else if (updatedDate >= sixtyDaysAgo && updatedDate < thirtyDaysAgo) {
+            previousCompleted++;
+          }
+        }
+      }
+    });
     
     const sessionGrowth = previousCompleted > 0
       ? Math.round(((recentCompleted - previousCompleted) / previousCompleted) * 100)
-      : 100;
+      : recentCompleted > 0 ? 100 : 0;
     
     // Calculate revenue (mock calculation based on bookings)
-    // Assuming average booking price of $50
     const averageBookingPrice = 50;
     const revenue = monthlyBookings * averageBookingPrice;
     const previousRevenue = previousBookings * averageBookingPrice;
     
     const revenueGrowth = previousRevenue > 0
       ? Math.round(((revenue - previousRevenue) / previousRevenue) * 100)
-      : 100;
+      : revenue > 0 ? 100 : 0;
     
     return {
       activeUsers,
