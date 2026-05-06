@@ -7,7 +7,11 @@ import Link from 'next/link';
 import { getArticlesBySection, Article, ContentSection } from '@/lib/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function CuratedContent() {
+interface CuratedContentProps {
+  section?: ContentSection;
+}
+
+export default function CuratedContent({ section = 'general' }: CuratedContentProps) {
   const { user } = useAuth();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,8 +19,8 @@ export default function CuratedContent() {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        // Fetch articles for postpartum section (can be made dynamic based on user's stage)
-        const articlesData = await getArticlesBySection('postpartum', 3);
+        // Fetch articles for the specified section
+        const articlesData = await getArticlesBySection(section, 3);
         setArticles(articlesData);
       } catch (error) {
         console.error('Error fetching curated content:', error);
@@ -26,7 +30,7 @@ export default function CuratedContent() {
     };
 
     fetchArticles();
-  }, [user]);
+  }, [user, section]);
 
   // Helper function to get gradient based on category
   const getCategoryGradient = (category: string) => {

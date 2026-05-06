@@ -33,6 +33,14 @@ export default function PrePregnancyDashboard() {
     const loadUserData = async () => {
       try {
         const profile = await getUserProfile(user.uid);
+        
+        // Access control: Only allow users with 'planning' or 'pregnancy' stage
+        if (profile?.currentStage && profile.currentStage !== 'planning' && profile.currentStage !== 'pregnancy') {
+          console.warn('Access denied: User stage does not match planning or pregnancy');
+          router.push('/dashboard');
+          return;
+        }
+        
         if (profile?.displayName) {
           setUserName(profile.displayName.split(' ')[0]);
         } else if (user.email) {

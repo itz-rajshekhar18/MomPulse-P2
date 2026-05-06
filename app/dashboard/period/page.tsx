@@ -32,6 +32,14 @@ export default function PeriodTrackerDashboard() {
     const loadUserData = async () => {
       try {
         const profile = await getUserProfile(user.uid);
+        
+        // Access control: Only allow users with 'period' stage
+        if (profile?.currentStage && profile.currentStage !== 'period') {
+          console.warn('Access denied: User stage does not match period tracker');
+          router.push('/dashboard');
+          return;
+        }
+        
         if (profile?.displayName) {
           setUserName(profile.displayName.split(' ')[0]);
         } else if (user.email) {

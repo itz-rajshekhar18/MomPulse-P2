@@ -34,7 +34,8 @@ export default function DashboardPage() {
               router.push('/dashboard/pre-pregnancy');
               break;
             case 'pregnancy':
-              router.push('/dashboard/pregnancy');
+              // Redirect to pre-pregnancy dashboard for now (pregnancy dashboard not yet implemented)
+              router.push('/dashboard/pre-pregnancy');
               break;
             case 'postpartum':
               router.push('/dashboard/postpartum');

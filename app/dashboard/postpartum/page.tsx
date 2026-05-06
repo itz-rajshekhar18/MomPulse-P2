@@ -31,6 +31,14 @@ export default function PostPregnancyDashboard() {
     const loadUserData = async () => {
       try {
         const profile = await getUserProfile(user.uid);
+        
+        // Access control: Only allow users with 'postpartum' stage
+        if (profile?.currentStage && profile.currentStage !== 'postpartum') {
+          console.warn('Access denied: User stage does not match postpartum');
+          router.push('/dashboard');
+          return;
+        }
+        
         if (profile?.displayName) {
           setUserName(profile.displayName.split(' ')[0]);
         } else if (user.email) {
@@ -135,7 +143,7 @@ export default function PostPregnancyDashboard() {
 
           {/* Curated Content */}
           <AnimatedCard delay={0.6}>
-            <CuratedContent />
+            <CuratedContent section="postpartum" />
           </AnimatedCard>
 
           {/* Upcoming Sessions */}
