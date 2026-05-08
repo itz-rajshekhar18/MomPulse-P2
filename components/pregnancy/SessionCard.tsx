@@ -14,7 +14,7 @@ interface SessionCardProps {
   maxAttendees: number;
   category: string;
   color: 'pink' | 'green' | 'purple' | 'blue' | 'teal';
-  status: 'upcoming' | 'ongoing' | 'completed';
+  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
   onJoin?: () => void;
 }
 
@@ -55,6 +55,13 @@ export default function SessionCard({
       return (
         <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full">
           Completed
+        </span>
+      );
+    }
+    if (status === 'cancelled') {
+      return (
+        <span className="px-3 py-1 bg-red-100 text-red-600 text-xs font-semibold rounded-full">
+          Cancelled
         </span>
       );
     }
@@ -104,7 +111,7 @@ export default function SessionCard({
         </div>
       </div>
 
-      {status !== 'completed' && (
+      {status !== 'completed' && status !== 'cancelled' && (
         <button
           onClick={onJoin}
           className={`w-full px-6 py-3 ${
