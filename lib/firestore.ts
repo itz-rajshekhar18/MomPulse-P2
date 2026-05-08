@@ -1605,3 +1605,322 @@ export async function getAdminStats(): Promise<AdminStats> {
     };
   }
 }
+
+// Pregnancy Tracking interfaces
+export interface PregnancyLog {
+  id: string;
+  userId: string;
+  week: number; // Pregnancy week (1-40)
+  energy: number; // Energy level (1-10)
+  sleep: number; // Hours of sleep (0-12)
+  symptom_count: number; // Number of symptoms (0-12)
+  symptoms: string[]; // List of symptoms
+  water_pct: number; // Hydration percentage (0-100)
+  diet_pct: number; // Diet adherence percentage (0-100)
+  trimester: number; // Current trimester (1-3)
+  wellness_score?: number; // ML-predicted wellness score (0-100)
+  risk_level?: string; // ML-predicted risk level
+  risk_class?: number; // ML-predicted risk class (0-2)
+  notes?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface PregnancyInfo {
+  userId: string;
+  dueDate: string; // YYYY-MM-DD format
+  currentWeek: number;
+  lastMenstrualPeriod: string; // YYYY-MM-DD format
+  firstTimeMom?: boolean;
+  complications?: string[];
+  notes?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+// Save pregnancy information
+export async function savePregnancyInfo(
+  userId: string,
+  pregnancyData: Omit<PregnancyInfo, 'userId' | 'createdAt' | 'updatedAt'>
+): Promise<void> {
+  const pregnancyRef = doc(db, 'users', userId, 'tracking', 'pregnancy');
+  
+  await setDoc(pregnancyRef, {
+    ...pregnancyData,
+    userId,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+}
+
+// Get pregnancy information
+export async function getPregnancyInfo(userId: string): Promise<PregnancyInfo | null> {
+  const pregnancyRef = doc(db, 'users', userId, 'tracking', 'pregnancy');
+  const pregnancySnap = await getDoc(pregnancyRef);
+
+  if (pregnancySnap.exists()) {
+    return pregnancySnap.data() as PregnancyInfo;
+  }
+
+  return null;
+}
+
+// Save pregnancy log
+export async function savePregnancyLog(
+  userId: string,
+  logData: Omit<PregnancyLog, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+): Promise<string> {
+  const logsRef = collection(db, 'users', userId, 'tracking', 'pregnancy', 'logs');
+  const { addDoc } = await import('firebase/firestore');
+  
+  const docRef = await addDoc(logsRef, {
+    ...logData,
+    userId,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  // Trigger ML prediction after saving log
+  try {
+    const response = await fetch('/api/ml/pregnancy-wellness', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        week: logData.week,
+        energy: logData.energy,
+        sleep: logData.sleep,
+        symptom_count: logData.symptom_count,
+        water_pct: logData.water_pct,
+        diet_pct: logData.diet_pct,
+      })
+    });
+
+    if (response.ok) {
+      const prediction = await response.json();
+      
+      // Update the log with ML predictions
+      await updateDoc(docRef, {
+        wellness_score: prediction.wellness_score,
+        risk_level: prediction.risk_level,
+        risk_class: prediction.risk_class,
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    console.error('Error triggering ML prediction:', error);
+    // Don't fail the log save if ML prediction fails
+  }
+
+  return docRef.id;
+}
+
+// Get all pregnancy logs for a user
+export async function getPregnancyLogs(userId: string): Promise<PregnancyLog[]> {
+  const logsRef = collection(db, 'users', userId, 'tracking', 'pregnancy', 'logs');
+  const { getDocs, query, orderBy } = await import('firebase/firestore');
+  
+  const q = query(logsRef, orderBy('week', 'asc'));
+  const querySnapshot = await getDocs(q);
+
+  const logs: PregnancyLog[] = [];
+  querySnapshot.forEach((doc) => {
+    logs.push({
+      id: doc.id,
+      ...doc.data(),
+    } as PregnancyLog);
+  });
+
+  return logs;
+}
+
+// Get pregnancy log by week
+export async function getPregnancyLogByWeek(
+  userId: string,
+  week: number
+): Promise<PregnancyLog | null> {
+  const logsRef = collection(db, 'users', userId, 'tracking', 'pregnancy', 'logs');
+  const { getDocs, query, where, limit, orderBy } = await import('firebase/firestore');
+  
+  const q = query(
+    logsRef, 
+    where('week', '==', week), 
+    orderBy('createdAt', 'desc'),
+    limit(1)
+  );
+  const querySnapshot = await getDocs(q);
+
+  if (!querySnapshot.empty) {
+    const doc = querySnapshot.docs[0];
+    return {
+      id: doc.id,
+      ...doc.data(),
+    } as PregnancyLog;
+  }
+
+  return null;
+}
+
+// Get latest pregnancy log
+export async function getLatestPregnancyLog(userId: string): Promise<PregnancyLog | null> {
+  const logsRef = collection(db, 'users', userId, 'tracking', 'pregnancy', 'logs');
+  const { getDocs, query, orderBy, limit } = await import('firebase/firestore');
+  
+  const q = query(logsRef, orderBy('week', 'desc'), limit(1));
+  const querySnapshot = await getDocs(q);
+
+  if (!querySnapshot.empty) {
+    const doc = querySnapshot.docs[0];
+    return {
+      id: doc.id,
+      ...doc.data(),
+    } as PregnancyLog;
+  }
+
+  return null;
+}
+
+// Update pregnancy log
+export async function updatePregnancyLog(
+  userId: string,
+  logId: string,
+  updates: Partial<Omit<PregnancyLog, 'id' | 'userId' | 'createdAt'>>
+): Promise<void> {
+  const logRef = doc(db, 'users', userId, 'tracking', 'pregnancy', 'logs', logId);
+  
+  await updateDoc(logRef, {
+    ...updates,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// Delete pregnancy log
+export async function deletePregnancyLog(
+  userId: string,
+  logId: string
+): Promise<void> {
+  const logRef = doc(db, 'users', userId, 'tracking', 'pregnancy', 'logs', logId);
+  const { deleteDoc } = await import('firebase/firestore');
+  
+  await deleteDoc(logRef);
+}
+
+// Get pregnancy logs for a specific week range
+export async function getPregnancyLogsByWeekRange(
+  userId: string,
+  startWeek: number,
+  endWeek: number
+): Promise<PregnancyLog[]> {
+  const logsRef = collection(db, 'users', userId, 'tracking', 'pregnancy', 'logs');
+  const { getDocs, query, where, orderBy } = await import('firebase/firestore');
+  
+  const q = query(
+    logsRef,
+    where('week', '>=', startWeek),
+    where('week', '<=', endWeek),
+    orderBy('week', 'asc')
+  );
+  const querySnapshot = await getDocs(q);
+
+  const logs: PregnancyLog[] = [];
+  querySnapshot.forEach((doc) => {
+    logs.push({
+      id: doc.id,
+      ...doc.data(),
+    } as PregnancyLog);
+  });
+
+  return logs;
+}
+
+// Get pregnancy logs by trimester
+export async function getPregnancyLogsByTrimester(
+  userId: string,
+  trimester: number
+): Promise<PregnancyLog[]> {
+  const logsRef = collection(db, 'users', userId, 'tracking', 'pregnancy', 'logs');
+  const { getDocs, query, where, orderBy } = await import('firebase/firestore');
+  
+  const q = query(
+    logsRef,
+    where('trimester', '==', trimester),
+    orderBy('week', 'asc')
+  );
+  const querySnapshot = await getDocs(q);
+
+  const logs: PregnancyLog[] = [];
+  querySnapshot.forEach((doc) => {
+    logs.push({
+      id: doc.id,
+      ...doc.data(),
+    } as PregnancyLog);
+  });
+
+  return logs;
+}
+
+// Calculate pregnancy statistics
+export async function getPregnancyStats(userId: string): Promise<{
+  totalLogs: number;
+  averageWellness: number;
+  averageEnergy: number;
+  averageSleep: number;
+  averageHydration: number;
+  averageDiet: number;
+  mostCommonSymptoms: { symptom: string; count: number }[];
+  riskDistribution: { thriving: number; moderate: number; needsAttention: number };
+}> {
+  const logs = await getPregnancyLogs(userId);
+  
+  if (logs.length === 0) {
+    return {
+      totalLogs: 0,
+      averageWellness: 0,
+      averageEnergy: 0,
+      averageSleep: 0,
+      averageHydration: 0,
+      averageDiet: 0,
+      mostCommonSymptoms: [],
+      riskDistribution: { thriving: 0, moderate: 0, needsAttention: 0 },
+    };
+  }
+
+  const totalLogs = logs.length;
+  const averageWellness = logs.reduce((sum, log) => sum + (log.wellness_score || 0), 0) / totalLogs;
+  const averageEnergy = logs.reduce((sum, log) => sum + log.energy, 0) / totalLogs;
+  const averageSleep = logs.reduce((sum, log) => sum + log.sleep, 0) / totalLogs;
+  const averageHydration = logs.reduce((sum, log) => sum + log.water_pct, 0) / totalLogs;
+  const averageDiet = logs.reduce((sum, log) => sum + log.diet_pct, 0) / totalLogs;
+
+  // Count symptoms
+  const symptomCounts: { [key: string]: number } = {};
+  logs.forEach(log => {
+    log.symptoms.forEach(symptom => {
+      symptomCounts[symptom] = (symptomCounts[symptom] || 0) + 1;
+    });
+  });
+
+  const mostCommonSymptoms = Object.entries(symptomCounts)
+    .map(([symptom, count]) => ({ symptom, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  // Count risk levels
+  const riskDistribution = {
+    thriving: logs.filter(log => log.risk_class === 0).length,
+    moderate: logs.filter(log => log.risk_class === 1).length,
+    needsAttention: logs.filter(log => log.risk_class === 2).length,
+  };
+
+  return {
+    totalLogs,
+    averageWellness: Math.round(averageWellness * 10) / 10,
+    averageEnergy: Math.round(averageEnergy * 10) / 10,
+    averageSleep: Math.round(averageSleep * 10) / 10,
+    averageHydration: Math.round(averageHydration * 10) / 10,
+    averageDiet: Math.round(averageDiet * 10) / 10,
+    mostCommonSymptoms,
+    riskDistribution,
+  };
+}
