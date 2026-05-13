@@ -2,9 +2,12 @@
 
 import { FileText, Smile, MessageCircle, Calendar } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useRef } from 'react';
+import {animate} from 'animejs';
 
 export default function QuickActionButtons() {
   const router = useRouter();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const actions = [
     {
@@ -37,11 +40,29 @@ export default function QuickActionButtons() {
     }
   ];
 
+  // Animate buttons on mount with stagger
+  useEffect(() => {
+    if (containerRef.current) {
+      const buttons = containerRef.current.querySelectorAll('[data-action-button]') as NodeListOf<Element>;
+      Array.from(buttons).forEach((button, i) => {
+        animate(button, {
+          opacity: [0, 1],
+          translateY: [30, 0],
+          scale: [0.9, 1],
+          duration: 600,
+          delay: i * 100,
+          easing: 'easeOutQuad'
+        });
+      });
+    }
+  }, []);
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {actions.map((action, index) => (
         <button
           key={index}
+          data-action-button
           onClick={action.onClick}
           className={`${action.color} rounded-2xl p-6 flex flex-col items-center justify-center space-y-3 hover:shadow-md transition-all group`}
         >

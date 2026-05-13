@@ -2,7 +2,8 @@
 
 import { ArrowRight, Flame } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { useEffect, useRef } from 'react';
+import {animate} from 'animejs';
 
 interface CommunityCardsProps {
   section?: 'period' | 'pre-pregnancy' | 'postpartum' | 'general';
@@ -10,11 +11,29 @@ interface CommunityCardsProps {
 
 export default function CommunityCards({ section = 'general' }: CommunityCardsProps) {
   const router = useRouter();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Animate cards on mount with reveal effect
+  useEffect(() => {
+    if (containerRef.current) {
+      const cards = containerRef.current.querySelectorAll('[data-community-card]') as NodeListOf<Element>;
+      Array.from(cards).forEach((card, i) => {
+        animate(card, {
+          opacity: [0, 1],
+          translateY: [40, 0],
+          scale: [0.95, 1],
+          duration: 700,
+          delay: i * 150,
+          easing: 'easeOutQuad'
+        });
+      });
+    }
+  }, []);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Hot Topic Card */}
-      <div className="bg-gradient-to-br from-pink-100 to-pink-200 rounded-3xl p-8 relative overflow-hidden">
+      <div data-community-card className="bg-gradient-to-br from-pink-100 to-pink-200 rounded-3xl p-8 relative overflow-hidden">
         <div className="flex items-center space-x-2 mb-4">
           <Flame className="w-5 h-5 text-pink-600" />
           <span className="text-xs font-bold text-pink-600 uppercase tracking-wide">
@@ -36,7 +55,7 @@ export default function CommunityCards({ section = 'general' }: CommunityCardsPr
       </div>
 
       {/* Community Card */}
-      <div className="bg-gradient-to-br from-slate-700 to-slate-900 rounded-3xl p-8 relative overflow-hidden">
+      <div data-community-card className="bg-gradient-to-br from-slate-700 to-slate-900 rounded-3xl p-8 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 opacity-20">
           <div className="text-6xl">🌿</div>
         </div>

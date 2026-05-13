@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserCycles } from '@/lib/firestore';
 import { Zap } from 'lucide-react';
+import {animate} from 'animejs';
 
 export default function TodaysVibe() {
   const { user } = useAuth();
@@ -11,6 +12,8 @@ export default function TodaysVibe() {
     title: "Today's Vibe",
     message: "Loading your personalized vibe..."
   });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const messageRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
     const loadVibeData = async () => {
@@ -85,6 +88,25 @@ export default function TodaysVibe() {
 
     loadVibeData();
   }, [user]);
+
+  // Animate card entrance and message reveal
+  useEffect(() => {
+    if (containerRef.current && messageRef.current) {
+      animate(containerRef.current, {
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 600,
+        easing: 'easeOutQuad'
+      });
+
+      animate(messageRef.current, {
+        opacity: [0, 1],
+        duration: 500,
+        easing: 'easeOutQuad',
+        delay: 200
+      });
+    }
+  }, [vibe]);
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">

@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserCycles } from '@/lib/firestore';
 import { Sparkles } from 'lucide-react';
+import {animate} from 'animejs';
 
 export default function SelfCareHack() {
   const { user } = useAuth();
@@ -11,6 +12,8 @@ export default function SelfCareHack() {
     title: "Loading...",
     description: "Getting your personalized self-care tip..."
   });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadSelfCareHack = async () => {
@@ -118,13 +121,33 @@ export default function SelfCareHack() {
     loadSelfCareHack();
   }, [user]);
 
+  // Animate card entrance with sparkle effect
+  useEffect(() => {
+    if (containerRef.current && contentRef.current) {
+      animate(containerRef.current, {
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 600,
+        easing: 'easeOutQuad'
+      });
+
+      animate(contentRef.current, {
+        opacity: [0, 1],
+        scale: [0.95, 1],
+        duration: 500,
+        easing: 'easeOutQuad',
+        delay: 150
+      });
+    }
+  }, [hack]);
+
   return (
-    <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 shadow-sm border border-teal-200">
+    <div ref={containerRef} className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 shadow-sm border border-teal-200">
       <div className="flex items-start space-x-3 mb-3">
         <div className="p-2 bg-teal-100 rounded-lg">
           <Sparkles className="w-5 h-5 text-teal-600" />
         </div>
-        <div>
+        <div ref={contentRef}>
           <p className="text-xs text-teal-600 font-bold uppercase tracking-wide mb-1">
             SPARKLES SELF-CARE HACK
           </p>

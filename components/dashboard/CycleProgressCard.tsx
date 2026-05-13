@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserCycles, getPeriodPrediction } from '@/lib/firestore';
+import { animate } from 'animejs';
 
 export default function CycleProgressCard() {
   const { user } = useAuth();
@@ -14,6 +15,14 @@ export default function CycleProgressCard() {
   const [glowLevel, setGlowLevel] = useState('High');
   const [loading, setLoading] = useState(true);
   const [usingMLPrediction, setUsingMLPrediction] = useState(false);
+  
+  // Refs for anime.js animations
+  const dayLabelRef = useRef<HTMLSpanElement>(null);
+  const dayNumberRef = useRef<HTMLSpanElement>(null);
+  const phaseBadgeRef = useRef<HTMLDivElement>(null);
+  const nextPeriodValueRef = useRef<HTMLSpanElement>(null);
+  const glowLevelValueRef = useRef<HTMLParagraphElement>(null);
+  const statsContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadCycleData = async () => {
@@ -97,6 +106,69 @@ export default function CycleProgressCard() {
     loadCycleData();
   }, [user]);
 
+  // Animate hero elements on load
+  useEffect(() => {
+    if (!loading) {
+      // Staggered fade-up animation for DAY label and number
+      if (dayLabelRef.current) {
+        animate(dayLabelRef.current, {
+          opacity: [0, 1],
+          translateY: [20, 0],
+          duration: 600,
+          easing: 'easeOutQuad'
+        });
+      }
+
+      if (dayNumberRef.current) {
+        animate(dayNumberRef.current, {
+          opacity: [0, 1],
+          translateY: [30, 0],
+          scale: [0.8, 1],
+          duration: 700,
+          easing: 'easeOutQuad',
+          delay: 150
+        });
+      }
+
+      if (phaseBadgeRef.current) {
+        animate(phaseBadgeRef.current, {
+          opacity: [0, 1],
+          translateY: [20, 0],
+          duration: 600,
+          easing: 'easeOutQuad',
+          delay: 300
+        });
+      }
+
+      // Count-up animation for stats with stagger
+      setTimeout(() => {
+        if (nextPeriodValueRef.current) {
+          animate({ value: 0 }, {
+            value: nextPeriod,
+            round: 1,
+            duration: 800,
+            easing: 'easeOutQuad',
+            update(anim: any) {
+              if (nextPeriodValueRef.current) {
+                nextPeriodValueRef.current.textContent = String(Math.round(nextPeriod * (anim.progress / 100)));
+              }
+            }
+          });
+        }
+
+        if (glowLevelValueRef.current) {
+          animate(glowLevelValueRef.current, {
+            opacity: [0, 1],
+            scale: [0.8, 1],
+            duration: 600,
+            easing: 'easeOutQuad',
+            delay: 200
+          });
+        }
+      }, 400);
+    }
+  }, [loading, nextPeriod]);
+
   const progress = (currentDay / 28) * 100;
   const circumference = 2 * Math.PI * 90;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
@@ -156,13 +228,13 @@ export default function CycleProgressCard() {
             
             {/* Center Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-sm text-gray-500 uppercase tracking-wide">DAY</span>
-              <span className="text-6xl font-bold text-purple-600">{currentDay}</span>
+              <span ref={dayLabelRef} className="text-sm text-gray-500 uppercase tracking-wide">DAY</span>
+              <span ref={dayNumberRef} className="text-6xl font-bold text-purple-600">{currentDay}</span>
             </div>
           </div>
 
           {/* Phase Badge */}
-          <div className="mt-6 px-4 py-2 bg-gradient-to-r from-teal-100 to-teal-200 rounded-full">
+          <div ref={phaseBadgeRef} className="mt-6 px-4 py-2 bg-gradient-to-r from-teal-100 to-teal-200 rounded-full">
             <span className="text-sm font-semibold text-teal-700">
               ✨ GLOW PHASE ({cyclePhase})
             </span>
@@ -179,14 +251,14 @@ export default function CycleProgressCard() {
           </p>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 gap-4">
+          <div ref={statsContainerRef} className="grid grid-cols-2 gap-4">
             <div className="bg-white rounded-xl p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">NEXT PERIOD</p>
-              <p className="text-2xl font-bold text-gray-900">{nextPeriod} days</p>
+              <p className="text-2xl font-bold text-gray-900"><span ref={nextPeriodValueRef}>{nextPeriod}</span> days</p>
             </div>
             <div className="bg-white rounded-xl p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">GLOW LEVEL</p>
-              <p className="text-2xl font-bold text-gray-900">{glowLevel} ✨</p>
+              <p ref={glowLevelValueRef} className="text-2xl font-bold text-gray-900">{glowLevel} ✨</p>
             </div>
           </div>
         </div>
