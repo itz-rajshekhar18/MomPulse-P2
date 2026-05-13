@@ -1,5 +1,5 @@
 ﻿#!/usr/bin/env python3
-""
+"""
 MomPulse ML Backend - Main Entry Point
 ======================================
 Runs both Period Tracker and Pregnancy Wellness ML models simultaneously.
@@ -16,7 +16,7 @@ Usage:
 Environment Variables:
     PORT: Flask server port (default: 5000)
     FLASK_ENV: Environment (development/production)
-""
+"""
 
 import sys
 import os
@@ -25,7 +25,6 @@ import threading
 import signal
 import logging
 from datetime import datetime
-from multiprocessing import Process, Queue
 import json
 
 # Add the ml-backend directory to the path
@@ -42,7 +41,7 @@ logger = logging.getLogger(__name__)
 shutdown_event = threading.Event()
 
 def print_header():
-    ""Print a nice header for the ML backend.""
+    """Print a nice header for the ML backend."""
     print("\n" + "=" * 80)
     print("  🤖 MOMPULSE ML BACKEND - MAIN SERVER")
     print("=" * 80)
@@ -50,13 +49,13 @@ def print_header():
     print("=" * 80 + "\n")
 
 def print_section(title):
-    ""Print a section header.""
+    """Print a section header."""
     print("\n" + "─" * 80)
     print(f"  {title}")
     print("─" * 80 + "\n")
 
 def train_all_models():
-    ""Train both ML models.""
+    """Train both ML models."""
     print_section("🎓 TRAINING ML MODELS")
     
     try:
@@ -128,7 +127,7 @@ def train_all_models():
         return False
 
 def run_period_tracker_server():
-    ""Run the Period Tracker Flask server.""
+    """Run the Period Tracker Flask server."""
     print_section("🚀 STARTING PERIOD TRACKER SERVER")
     
     try:
@@ -156,11 +155,11 @@ def run_period_tracker_server():
         print(f"\n  ✗ Error running Period Tracker server: {e}")
 
 def run_pregnancy_wellness_server():
-    ""Run the Pregnancy Wellness model server.""
+    """Run the Pregnancy Wellness model server."""
     print_section("🚀 STARTING PREGNANCY WELLNESS SERVER")
     
     try:
-        from pregnancy_wellness_ml import app
+        from pregnancy_wellness_ml import app as wellness_app
         
         port = int(os.environ.get('PREGNANCY_PORT', 5001))
         print(f"  Starting Pregnancy Wellness API on port {port}...")
@@ -171,7 +170,7 @@ def run_pregnancy_wellness_server():
         print(f"    - GET /health: Health check")
         
         # Run Flask app
-        app.run(
+        wellness_app.run(
             host='0.0.0.0',
             port=port,
             debug=False,
@@ -184,7 +183,7 @@ def run_pregnancy_wellness_server():
         print(f"\n  ✗ Error running Pregnancy Wellness server: {e}")
 
 def signal_handler(signum, frame):
-    ""Handle shutdown signals gracefully.""
+    """Handle shutdown signals gracefully."""
     print("\n\n" + "=" * 80)
     print("  ⚠️  Shutdown signal received. Gracefully shutting down...")
     print("=" * 80 + "\n")
@@ -192,7 +191,7 @@ def signal_handler(signum, frame):
     sys.exit(0)
 
 def main():
-    ""Main entry point.""
+    """Main entry point."""
     print_header()
     
     # Register signal handlers
