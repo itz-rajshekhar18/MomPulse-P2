@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserCycles, getPeriodPrediction } from '@/lib/firestore';
 import { animate } from 'animejs';
+import AnimatedProgressRing from './AnimatedProgressRing';
 
 export default function CycleProgressCard() {
   const { user } = useAuth();
@@ -195,36 +196,13 @@ export default function CycleProgressCard() {
         {/* Left Side - Circular Progress */}
         <div className="flex flex-col items-center justify-center">
           <div className="relative w-64 h-64">
-            {/* Background Circle */}
-            <svg className="w-full h-full transform -rotate-90">
-              <circle
-                cx="128"
-                cy="128"
-                r="90"
-                stroke="#e5e7eb"
-                strokeWidth="20"
-                fill="none"
-              />
-              {/* Progress Circle */}
-              <circle
-                cx="128"
-                cy="128"
-                r="90"
-                stroke="url(#gradient)"
-                strokeWidth="20"
-                fill="none"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                className="transition-all duration-1000"
-              />
-              <defs>
-                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#a855f7" />
-                  <stop offset="100%" stopColor="#ec4899" />
-                </linearGradient>
-              </defs>
-            </svg>
+            {/* Animated Progress Ring */}
+            <AnimatedProgressRing 
+              progress={progress} 
+              size={256}
+              strokeWidth={20}
+              color="url(#gradient)"
+            />
             
             {/* Center Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
