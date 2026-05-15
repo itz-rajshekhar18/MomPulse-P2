@@ -14,38 +14,35 @@ import LogoutButton from '@/components/profile/LogoutButton';
 export default function ProfilePage() {
   const { user, logout } = useAuth();
   const router = useRouter();
+
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [userName, setUserName] = useState<string>('');
   const [showRecovery, setShowRecovery] = useState(false);
+
+  const loadProfile = async () => {
+    if (!user) return;
+    try {
+      const userProfile = await getUserProfile(user.uid);
+      setProfile(userProfile);
+      if (userProfile?.displayName) {
+        setUserName(userProfile.displayName.split(' ')[0]);
+      } else if (user.email) {
+        setUserName(user.email.split('@')[0]);
+      }
+      setShowRecovery(userProfile?.currentStage === 'postpartum');
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
       router.push('/login');
       return;
     }
-
-    const loadProfile = async () => {
-      try {
-        const userProfile = await getUserProfile(user.uid);
-        setProfile(userProfile);
-        
-        // Set user name for header
-        if (userProfile?.displayName) {
-          setUserName(userProfile.displayName.split(' ')[0]);
-        } else if (user.email) {
-          setUserName(user.email.split('@')[0]);
-        }
-
-        // Determine if user is in postpartum stage
-        setShowRecovery(userProfile?.currentStage === 'postpartum');
-      } catch (error) {
-        console.error('Error loading profile:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadProfile();
   }, [user, router]);
 
@@ -60,7 +57,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading profile...</p>
@@ -70,19 +67,22 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50">
-      {/* Dashboard Header - Same as other pages */}
+    <div className="min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 absolute inset-0 -z-10" />
+
       <DashboardHeader userName={userName} showRecovery={showRecovery} />
 
-      {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">
+
         {/* Profile Header */}
-        <ProfileHeader
-          name={profile?.displayName || user?.email?.split('@')[0] || 'User'}
-          location="San Francisco, CA"
-          isPremium={true}
-          photoURL={profile?.photoURL || user?.photoURL}
-        />
+        <div className="text-center mb-8 rounded-3xl p-6 shadow-sm border bg-white border-gray-100">
+          <ProfileHeader
+            name={profile?.displayName || user?.email?.split('@')[0] || 'User'}
+            location="San Francisco, CA"
+            isPremium={true}
+            photoURL={profile?.photoURL || user?.photoURL}
+          />
+        </div>
 
         {/* Stage Selector */}
         <StageSelector currentStage={profile?.currentStage || 'planning'} />
@@ -91,7 +91,8 @@ export default function ProfilePage() {
         <PersonalInformation
           fullName={profile?.displayName || ''}
           email={user?.email || ''}
-          phone="+1 (555) 902-3412"
+          phone={profile?.phone || '+1 (555) 902-3412'}
+          onUpdate={loadProfile}
         />
 
         {/* Preferences */}
@@ -100,8 +101,9 @@ export default function ProfilePage() {
         {/* Logout Button */}
         <LogoutButton onLogout={handleLogout} />
 
-        {/* App Version */}
-        <p className="text-center text-xs text-gray-400 mt-6">APP VERSION 2.4.1 (812)</p>
+        <p className="text-center text-xs mt-6 text-gray-400">
+          APP VERSION 2.4.1 (812)
+        </p>
       </main>
     </div>
   );

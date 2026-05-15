@@ -15,6 +15,7 @@ export interface UserProfile {
   email: string;
   displayName?: string;
   photoURL?: string;
+  phone?: string;
   role?: 'user' | 'admin' | 'doctor'; // User role for access control
   currentStage?: 'planning' | 'postpartum' | 'pregnancy' | 'period';
   age?: number;

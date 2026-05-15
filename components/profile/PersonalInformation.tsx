@@ -2,15 +2,66 @@
 
 import { motion } from 'framer-motion';
 import { useState } from 'react';
+import { updateUserProfile } from '@/lib/firestore';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PersonalInformationProps {
   fullName: string;
   email: string;
   phone: string;
+  onUpdate?: () => void;
 }
 
-export default function PersonalInformation({ fullName, email, phone }: PersonalInformationProps) {
+export default function PersonalInformation({ fullName, email, phone, onUpdate }: PersonalInformationProps) {
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    fullName: fullName || '',
+    phone: phone || '',
+  });
+
+  const handleSave = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    setError('');
+    setSuccess(false);
+
+    try {
+      await updateUserProfile(user.uid, {
+        displayName: formData.fullName,
+        phone: formData.phone,
+      });
+      
+      setSuccess(true);
+      setIsEditing(false);
+      
+      // Call onUpdate callback if provided
+      if (onUpdate) {
+        onUpdate();
+      }
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setFormData({
+      fullName: fullName || '',
+      phone: phone || '',
+    });
+    setIsEditing(false);
+    setError('');
+  };
 
   return (
     <motion.div
@@ -22,13 +73,48 @@ export default function PersonalInformation({ fullName, email, phone }: Personal
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-gray-900 font-serif">Personal Information</h3>
-        <button
-          onClick={() => setIsEditing(!isEditing)}
-          className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
-        >
-          {isEditing ? 'Save' : 'Edit'}
-        </button>
+        <div className="flex gap-2">
+          {isEditing ? (
+            <>
+              <button
+                onClick={handleCancel}
+                disabled={loading}
+                className="text-gray-600 hover:text-gray-700 text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={loading}
+                className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Saving...' : 'Save'}
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="text-purple-600 hover:text-purple-700 text-sm font-medium transition-colors"
+            >
+              Edit
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Success Message */}
+      {success && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">
+          Profile updated successfully!
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+          {error}
+        </div>
+      )}
 
       {/* Fields */}
       <div className="space-y-4">
@@ -48,11 +134,13 @@ export default function PersonalInformation({ fullName, email, phone }: Personal
             {isEditing ? (
               <input
                 type="text"
-                defaultValue={fullName}
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 className="flex-1 bg-transparent outline-none text-gray-900"
+                placeholder="Enter your full name"
               />
             ) : (
-              <span className="text-gray-900">{fullName || 'Not set'}</span>
+              <span className="text-gray-900">{formData.fullName || 'Not set'}</span>
             )}
           </div>
         </div>
@@ -68,6 +156,7 @@ export default function PersonalInformation({ fullName, email, phone }: Personal
               <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
             </svg>
             <span className="text-gray-900">{email}</span>
+            <span className="ml-auto text-xs text-gray-400">Cannot be changed</span>
           </div>
         </div>
 
@@ -83,11 +172,13 @@ export default function PersonalInformation({ fullName, email, phone }: Personal
             {isEditing ? (
               <input
                 type="tel"
-                defaultValue={phone}
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="flex-1 bg-transparent outline-none text-gray-900"
+                placeholder="+1 (555) 000-0000"
               />
             ) : (
-              <span className="text-gray-900">{phone}</span>
+              <span className="text-gray-900">{formData.phone || 'Not set'}</span>
             )}
           </div>
         </div>

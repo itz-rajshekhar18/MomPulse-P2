@@ -61,7 +61,8 @@ export default function DashboardPage() {
 
   if (!user || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 absolute inset-0 -z-10" />
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading your dashboard...</p>
@@ -72,12 +73,16 @@ export default function DashboardPage() {
 
   // Fallback dashboard (shouldn't normally reach here)
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50">
-      <header className="bg-white shadow-sm">
+    <div className="min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 absolute inset-0 -z-10" />
+
+      <header className="shadow-sm bg-white">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-purple-600 font-serif">MomPulse</h1>
           <div className="flex items-center gap-4">
-            <span className="text-gray-600">Welcome, {user.displayName || user.email}</span>
+            <span className="text-gray-600">
+              Welcome, {user.displayName || user.email}
+            </span>
             <button
               onClick={async () => {
                 await logout();
@@ -92,9 +97,11 @@ export default function DashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-12">
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-3xl font-bold mb-4 font-serif">Welcome to MomPulse</h2>
-          <p className="text-gray-600 mb-6">
+        <div className="rounded-2xl shadow-lg p-8 bg-white">
+          <h2 className="text-3xl font-bold mb-4 font-serif text-gray-900">
+            Welcome to MomPulse
+          </h2>
+          <p className="mb-6 text-gray-600">
             Complete your onboarding to access your personalized dashboard.
           </p>
           <button

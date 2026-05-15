@@ -16,11 +16,7 @@ export default function StageSelector({ currentStage }: StageSelectorProps) {
       label: 'PLANNING',
       icon: (
         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            fillRule="evenodd"
-            d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
-            clipRule="evenodd"
-          />
+          <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
         </svg>
       ),
     },
@@ -40,29 +36,29 @@ export default function StageSelector({ currentStage }: StageSelectorProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
-      className="mb-8"
+      className="mb-6"
     >
       <div className="grid grid-cols-2 gap-4">
-        {stages.map((stage) => (
-          <button
-            key={stage.id}
-            onClick={() => setSelectedStage(stage.id as any)}
-            className={`p-6 rounded-2xl border-2 transition-all ${
-              selectedStage === stage.id
-                ? 'bg-purple-50 border-purple-600'
-                : 'bg-white border-gray-200 hover:border-purple-300'
-            }`}
-          >
-            <div
-              className={`flex flex-col items-center gap-3 ${
-                selectedStage === stage.id ? 'text-purple-600' : 'text-gray-600'
-              }`}
+        {stages.map((stage) => {
+          const isSelected = selectedStage === stage.id;
+          return (
+            <button
+              key={stage.id}
+              onClick={() => setSelectedStage(stage.id as any)}
+              className="p-6 rounded-2xl border-2 transition-all"
+              style={{
+                background: isSelected ? '#f5f3ff' : '#ffffff',
+                borderColor: isSelected ? '#7c3aed' : '#e5e7eb',
+                color: isSelected ? '#7c3aed' : '#4b5563',
+              }}
             >
-              {stage.icon}
-              <span className="text-sm font-bold tracking-wide">{stage.label}</span>
-            </div>
-          </button>
-        ))}
+              <div className="flex flex-col items-center gap-3">
+                {stage.icon}
+                <span className="text-sm font-bold tracking-wide">{stage.label}</span>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </motion.div>
   );
