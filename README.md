@@ -196,7 +196,7 @@ mompulse/
 
 ## 🤖 ML Backend Setup
 
-The ML backend is deployed on Render at `https://mompulse-p2-2.onrender.com`.
+The ML backend is deployed on Render at `https://mompulse-p2-3.onrender.com`.
 
 ### Local Development
 
