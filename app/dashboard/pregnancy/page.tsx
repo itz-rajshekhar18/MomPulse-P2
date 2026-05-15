@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
-import { getUserProfile, getPregnancyInfo, getLatestPregnancyLog } from '@/lib/firestore';
+import { getUserProfile, getPregnancyInfo, getLatestPregnancyLog, getUpcomingSessions } from '@/lib/firestore';
 import PregnancyDateModal from '@/components/pregnancy/PregnancyDateModal';
 import PregnancyHeader from '@/components/pregnancy/PregnancyHeader';
 import BabyGrowthCard from '@/components/pregnancy/BabyGrowthCard';
@@ -24,6 +24,8 @@ export default function PregnancyDashboard() {
   const [showDateModal, setShowDateModal] = useState(false);
   const [aiInsight, setAiInsight] = useState<{ title: string; message: string; icon: string } | null>(null);
   const [loadingInsight, setLoadingInsight] = useState(false);
+  const [upcomingSession, setUpcomingSession] = useState<any>(null);
+  const [loadingSession, setLoadingSession] = useState(true);
 
   const loadUserData = useCallback(async () => {
     if (!user) return;
@@ -56,6 +58,18 @@ export default function PregnancyDashboard() {
       // Load latest pregnancy log
       const log = await getLatestPregnancyLog(user.uid);
       setLatestLog(log);
+
+      // Load upcoming sessions
+      try {
+        const sessions = await getUpcomingSessions(1);
+        if (sessions && sessions.length > 0) {
+          setUpcomingSession(sessions[0]);
+        }
+      } catch (err) {
+        console.error('Failed to load upcoming sessions', err);
+      } finally {
+        setLoadingSession(false);
+      }
 
       // Generate AI Insight
       if (!aiInsight && !loadingInsight) {
@@ -228,17 +242,18 @@ export default function PregnancyDashboard() {
               <QuickActionsGrid />
 
               {/* Recommended Content */}
-              <RecommendedContent />
+              <RecommendedContent currentWeek={currentWeek} />
             </div>
 
             {/* Right Column - 1/3 width */}
             <div className="space-y-6">
               {/* Upcoming Session */}
               <UpcomingSessionCard
-                doctorName="Dr. Sarah Mitchell"
-                specialty="Prenatal Check-up"
-                date="Tomorrow, May 7"
-                time="2:30 PM"
+                doctorName={upcomingSession?.instructor || upcomingSession?.title}
+                specialty={upcomingSession?.category}
+                date={upcomingSession?.date}
+                time={upcomingSession?.time}
+                isLoading={loadingSession}
               />
 
               {/* Wellness Summary Card */}
