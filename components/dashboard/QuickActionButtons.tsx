@@ -2,12 +2,14 @@
 
 import { FileText, Smile, MessageCircle, Calendar } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
-import {animate} from 'animejs';
+import { useEffect, useState, useRef } from 'react';
+import { animate } from 'animejs';
+import MarkPeriodModal from './MarkPeriodModal';
 
 export default function QuickActionButtons() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [showMarkModal, setShowMarkModal] = useState(false);
 
   const actions = [
     {
@@ -33,10 +35,10 @@ export default function QuickActionButtons() {
     },
     {
       icon: Calendar,
-      label: 'Full View',
+      label: 'Mark Period',
       color: 'bg-teal-50',
       iconColor: 'text-teal-600',
-      onClick: () => router.push('/dashboard/period/calendar')
+      onClick: () => setShowMarkModal(true)
     }
   ];
 
@@ -72,6 +74,15 @@ export default function QuickActionButtons() {
           <span className="text-sm font-semibold text-gray-900">{action.label}</span>
         </button>
       ))}
+
+      <MarkPeriodModal 
+        isOpen={showMarkModal} 
+        onClose={() => setShowMarkModal(false)}
+        onSuccess={() => {
+          // Refresh data if needed or just show success
+          console.log('Period marked successfully');
+        }}
+      />
     </div>
   );
 }

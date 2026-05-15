@@ -8,6 +8,7 @@ import PeriodTrackerHeader from '@/components/dashboard/PeriodTrackerHeader';
 import FloatingLeaves from '@/components/animations/FloatingLeaves';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Plus, Edit2, Lightbulb } from 'lucide-react';
+import MarkPeriodModal from '@/components/dashboard/MarkPeriodModal';
 
 interface DayData {
   date: Date;
@@ -40,6 +41,7 @@ export default function CalendarPage() {
   
   // Add cycle modal state
   const [showAddCycleModal, setShowAddCycleModal] = useState(false);
+  const [showMarkPeriodModal, setShowMarkPeriodModal] = useState(false);
   const [newCycleStartDate, setNewCycleStartDate] = useState('');
   const [newCycleEndDate, setNewCycleEndDate] = useState('');
   const [newCycleFlowIntensity, setNewCycleFlowIntensity] = useState<'light' | 'medium' | 'heavy'>('medium');
@@ -335,7 +337,7 @@ export default function CalendarPage() {
                   Log Cycle
                 </button>
                 <button
-                  onClick={() => setShowAddCycleModal(true)}
+                  onClick={() => setShowMarkPeriodModal(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -700,6 +702,13 @@ export default function CalendarPage() {
           </motion.div>
         </div>
       )}
+
+      {/* Mark Period Modal */}
+      <MarkPeriodModal 
+        isOpen={showMarkPeriodModal} 
+        onClose={() => setShowMarkPeriodModal(false)}
+        onSuccess={() => window.location.reload()}
+      />
 
       {/* Blur Overlay - Show when no cycle logged */}
       {!hasLoggedCycle && (
