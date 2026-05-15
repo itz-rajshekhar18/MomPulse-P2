@@ -16,13 +16,34 @@ export default function BabyGrowthInfoCard({
   description,
   imageUrl
 }: BabyGrowthInfoCardProps) {
-  const getComparisonEmoji = (comp: string) => {
-    if (comp.toLowerCase().includes('eggplant')) return '🍆';
-    if (comp.toLowerCase().includes('banana')) return '🍌';
-    if (comp.toLowerCase().includes('avocado')) return '🥑';
-    if (comp.toLowerCase().includes('cantaloupe')) return '🍈';
-    return '🥚';
+  const getFruitImage = (comp: string) => {
+    const images: Record<string, string> = {
+      'Poppy Seed': '/images/seeds/poppy_seed_1778887003729.png',
+      'Raspberry': '/images/seeds/raspberry_1778887030580.png',
+      'Lime': '/images/seeds/lime_1778887097763.png',
+      'Avocado': '/images/seeds/avocado_1778887336490.png',
+      'Banana': '/images/seeds/banana_1778887373499.png',
+    };
+    return images[comp] || null;
   };
+
+  const getFruitEmoji = (comp: string) => {
+    const emojis: Record<string, string> = {
+      'Poppy Seed': '🌑',
+      'Raspberry': '🍓',
+      'Lime': '🍋',
+      'Avocado': '🥑',
+      'Banana': '🍌',
+      'Cantaloupe': '🍈',
+      'Eggplant': '🍆',
+      'Pineapple': '🍍',
+      'Honeydew': '🍈',
+      'Watermelon': '🍉',
+    };
+    return emojis[comp] || '🥚';
+  };
+
+  const fruitImage = getFruitImage(comparison);
 
   return (
     <div className="grid md:grid-cols-2 gap-6">
@@ -57,9 +78,19 @@ export default function BabyGrowthInfoCard({
         className="bg-gradient-to-br from-green-50 to-green-100 rounded-3xl p-6 shadow-sm border border-green-200 flex items-center justify-center relative overflow-hidden"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-green-100/50 to-transparent" />
-        <div className="relative z-10 text-center">
-          <div className="text-8xl mb-4">
-            {getComparisonEmoji(comparison)}
+        <div className="relative z-10 text-center flex flex-col items-center">
+          <div className="w-32 h-32 mb-4 bg-white/50 rounded-full flex items-center justify-center overflow-hidden shadow-inner border-2 border-white">
+            {fruitImage ? (
+              <Image 
+                src={fruitImage} 
+                alt={comparison} 
+                width={128} 
+                height={128} 
+                className="object-cover w-full h-full"
+              />
+            ) : (
+              <span className="text-6xl">{getFruitEmoji(comparison)}</span>
+            )}
           </div>
           <p className="text-sm font-medium text-gray-700">
             Week {week}

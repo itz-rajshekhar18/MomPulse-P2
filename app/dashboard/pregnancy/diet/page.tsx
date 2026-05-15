@@ -2,8 +2,8 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { getUserProfile, getPregnancyInfo } from '@/lib/firestore';
+import { useEffect, useState, useCallback } from 'react';
+import { getUserProfile, getPregnancyInfo, getLatestPregnancyLog } from '@/lib/firestore';
 import PregnancyHeader from '@/components/pregnancy/PregnancyHeader';
 import NutritionInsightCard from '@/components/pregnancy/NutritionInsightCard';
 import MealPlanCard from '@/components/pregnancy/MealPlanCard';
@@ -19,41 +19,75 @@ export default function DietTrackerPage() {
   const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [pregnancyInfo, setPregnancyInfo] = useState<any>(null);
+  const [aiInsight, setAiInsight] = useState<{ title: string; message: string; icon: string } | null>(null);
+  const [loadingInsight, setLoadingInsight] = useState(false);
+
+  const loadUserData = useCallback(async () => {
+    if (!user) return;
+    try {
+      const profile = await getUserProfile(user.uid);
+      
+      // Access control
+      if (profile?.currentStage && profile.currentStage !== 'pregnancy') {
+        router.push('/dashboard');
+        return;
+      }
+      
+      if (profile?.displayName) {
+        setUserName(profile.displayName.split(' ')[0]);
+      } else if (user.email) {
+        setUserName(user.email.split('@')[0]);
+      }
+
+      // Load pregnancy info
+      const pregInfo = await getPregnancyInfo(user.uid);
+      setPregnancyInfo(pregInfo);
+
+      // Load latest pregnancy log to pass context to AI
+      const log = await getLatestPregnancyLog(user.uid);
+
+      // Generate AI Insight
+      if (!aiInsight && !loadingInsight) {
+        setLoadingInsight(true);
+        try {
+          const insightRes = await fetch('/api/ai/insight', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              stage: 'Pregnancy',
+              insightType: 'nutrition',
+              contextData: {
+                currentWeek: pregInfo?.currentWeek || 0,
+                dietScore: log?.diet_pct,
+                hydration: log?.water_pct,
+                energy: log?.energy
+              }
+            })
+          });
+          if (insightRes.ok) {
+            const insightData = await insightRes.json();
+            setAiInsight(insightData);
+          }
+        } catch (err) {
+          console.error('Failed to load AI insight', err);
+        } finally {
+          setLoadingInsight(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, router]);
 
   useEffect(() => {
     if (!user) {
       router.push('/login');
       return;
     }
-
-    const loadUserData = async () => {
-      try {
-        const profile = await getUserProfile(user.uid);
-        
-        // Access control
-        if (profile?.currentStage && profile.currentStage !== 'pregnancy') {
-          router.push('/dashboard');
-          return;
-        }
-        
-        if (profile?.displayName) {
-          setUserName(profile.displayName.split(' ')[0]);
-        } else if (user.email) {
-          setUserName(user.email.split('@')[0]);
-        }
-
-        // Load pregnancy info
-        const pregInfo = await getPregnancyInfo(user.uid);
-        setPregnancyInfo(pregInfo);
-      } catch (error) {
-        console.error('Error loading user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadUserData();
-  }, [user, router]);
+  }, [user, router, loadUserData]);
 
   if (!user || loading) {
     return (
@@ -167,8 +201,9 @@ export default function DietTrackerPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Sanctuary Insight */}
             <NutritionInsightCard
-              insight="Adding a squeeze of lemon to your spinach helps your body absorb more iron today! The Vitamin C acts as a natural catalyst for nutrient synthesis."
-              emoji="🍋"
+              insight={aiInsight?.message || "Adding a squeeze of lemon to your spinach helps your body absorb more iron today! The Vitamin C acts as a natural catalyst for nutrient synthesis."}
+              emoji={aiInsight?.icon || "🍋"}
+              isLoading={loadingInsight}
             />
 
             {/* Daily Meal Plan */}

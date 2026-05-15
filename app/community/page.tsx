@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { getUserProfile, getCommunityPosts, hasUserLikedPost, CommunityPost, CommunitySection } from '@/lib/firestore';
 import PeriodTrackerHeader from '@/components/dashboard/PeriodTrackerHeader';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import PregnancyHeader from '@/components/pregnancy/PregnancyHeader';
 import FloatingLeaves from '@/components/animations/FloatingLeaves';
 import CreatePostModal from '@/components/community/CreatePostModal';
 import PostCard from '@/components/community/PostCard';
@@ -34,6 +35,7 @@ export default function CommunityPage() {
   const getValidSection = (param: string | null): CommunitySection => {
     if (param === 'period') return 'period';
     if (param === 'pre-pregnancy') return 'pre-pregnancy';
+    if (param === 'pregnancy') return 'pregnancy';
     if (param === 'postpartum') return 'postpartum';
     return 'general';
   };
@@ -136,6 +138,8 @@ export default function CommunityPage() {
         return 'Period Tracking Community';
       case 'pre-pregnancy':
         return 'Pre-Pregnancy Community';
+      case 'pregnancy':
+        return 'Pregnancy Community';
       case 'postpartum':
         return 'Postpartum Community';
       default:
@@ -149,6 +153,8 @@ export default function CommunityPage() {
         return 'Share experiences, ask questions, and connect with others tracking their cycles';
       case 'pre-pregnancy':
         return 'Connect with others planning for pregnancy and share your journey';
+      case 'pregnancy':
+        return 'Share experiences, seek advice, and connect with expecting mothers';
       case 'postpartum':
         return 'Support and connect with other new mothers in postpartum recovery';
       default:
@@ -189,10 +195,12 @@ export default function CommunityPage() {
       <FloatingLeaves />
 
       {/* Conditional Header based on section */}
-      {usePeriodTracker ? (
+      {section === 'period' ? (
         <PeriodTrackerHeader userName={userName} />
+      ) : section === 'pregnancy' ? (
+        <PregnancyHeader userName={userName} />
       ) : (
-        <DashboardHeader userName={userName} showRecovery={showRecovery} />
+        <DashboardHeader userName={userName} showRecovery={showRecovery} section={section === 'postpartum' ? 'postpartum' : 'pre-pregnancy'} />
       )}
 
       {/* Modals */}

@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { 
   getUserProfile, 
   getPregnancyInfo, 
@@ -38,56 +38,90 @@ export default function PregnancyTrackerPage() {
 
   const { predict, prediction, loading: predicting } = usePregnancyWellness();
 
+  const [aiInsight, setAiInsight] = useState<{ title: string; message: string; icon: string } | null>(null);
+  const [loadingInsight, setLoadingInsight] = useState(false);
+
+  const loadUserData = useCallback(async () => {
+    if (!user) return;
+    try {
+      const profile = await getUserProfile(user.uid);
+      
+      // Access control
+      if (profile?.currentStage && profile.currentStage !== 'pregnancy') {
+        router.push('/dashboard');
+        return;
+      }
+      
+      if (profile?.displayName) {
+        setUserName(profile.displayName.split(' ')[0]);
+      } else if (user.email) {
+        setUserName(user.email.split('@')[0]);
+      }
+
+      // Load pregnancy info
+      const pregInfo = await getPregnancyInfo(user.uid);
+      setPregnancyInfo(pregInfo);
+
+      // Load latest log
+      let log = null;
+      log = await getLatestPregnancyLog(user.uid);
+      if (log) {
+        setLatestLog(log);
+        setWaterIntake(log.water_pct / 100 * 2); // Convert percentage to liters
+        setSleepHours(log.sleep);
+        setEnergyLevel(log.energy);
+        setDietAdherence(log.diet_pct);
+        setSymptoms(log.symptoms?.map((s: string, i: number) => ({
+          id: `${i}`,
+          name: s,
+          description: '',
+          icon: 'back'
+        })) || []);
+      }
+
+      // Generate AI Insight
+      if (!aiInsight && !loadingInsight) {
+        setLoadingInsight(true);
+        try {
+          const insightRes = await fetch('/api/ai/insight', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              stage: 'Pregnancy',
+              insightType: 'daily_wellness',
+              contextData: {
+                currentWeek: pregInfo?.currentWeek || 0,
+                wellnessScore: log?.wellness_score,
+                energy: log?.energy,
+                sleep: log?.sleep,
+                symptoms: log?.symptoms
+              }
+            })
+          });
+          if (insightRes.ok) {
+            const insightData = await insightRes.json();
+            setAiInsight(insightData);
+          }
+        } catch (err) {
+          console.error('Failed to load AI insight', err);
+        } finally {
+          setLoadingInsight(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, router]);
+
   useEffect(() => {
     if (!user) {
       router.push('/login');
       return;
     }
-
-    const loadUserData = async () => {
-      try {
-        const profile = await getUserProfile(user.uid);
-        
-        // Access control
-        if (profile?.currentStage && profile.currentStage !== 'pregnancy') {
-          router.push('/dashboard');
-          return;
-        }
-        
-        if (profile?.displayName) {
-          setUserName(profile.displayName.split(' ')[0]);
-        } else if (user.email) {
-          setUserName(user.email.split('@')[0]);
-        }
-
-        // Load pregnancy info
-        const pregInfo = await getPregnancyInfo(user.uid);
-        setPregnancyInfo(pregInfo);
-
-        // Load latest log
-        const log = await getLatestPregnancyLog(user.uid);
-        if (log) {
-          setLatestLog(log);
-          setWaterIntake(log.water_pct / 100 * 2); // Convert percentage to liters
-          setSleepHours(log.sleep);
-          setEnergyLevel(log.energy);
-          setDietAdherence(log.diet_pct);
-          setSymptoms(log.symptoms?.map((s: string, i: number) => ({
-            id: `${i}`,
-            name: s,
-            description: '',
-            icon: 'back'
-          })) || []);
-        }
-      } catch (error) {
-        console.error('Error loading user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadUserData();
-  }, [user, router]);
+  }, [user, router, loadUserData]);
 
   const handleSaveLog = async () => {
     if (!user || !pregnancyInfo) {
@@ -271,8 +305,9 @@ export default function PregnancyTrackerPage() {
           <div className="space-y-6">
             {/* Sanctuary Insight */}
             <SanctuaryInsightCard
-              insight="Try a 5-minute prenatal stretch today for better sleep."
+              insight={aiInsight?.message || "Try a 5-minute prenatal stretch today for better sleep."}
               onStartSession={() => router.push('/sanctuary')}
+              isLoading={loadingInsight}
             />
 
             {/* Wellness Summary */}

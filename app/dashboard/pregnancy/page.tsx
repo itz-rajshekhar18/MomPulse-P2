@@ -2,8 +2,9 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getUserProfile, getPregnancyInfo, getLatestPregnancyLog } from '@/lib/firestore';
+import PregnancyDateModal from '@/components/pregnancy/PregnancyDateModal';
 import PregnancyHeader from '@/components/pregnancy/PregnancyHeader';
 import BabyGrowthCard from '@/components/pregnancy/BabyGrowthCard';
 import AIInsightCard from '@/components/pregnancy/AIInsightCard';
@@ -20,46 +21,85 @@ export default function PregnancyDashboard() {
   const [loading, setLoading] = useState(true);
   const [pregnancyInfo, setPregnancyInfo] = useState<any>(null);
   const [latestLog, setLatestLog] = useState<any>(null);
+  const [showDateModal, setShowDateModal] = useState(false);
+  const [aiInsight, setAiInsight] = useState<{ title: string; message: string; icon: string } | null>(null);
+  const [loadingInsight, setLoadingInsight] = useState(false);
+
+  const loadUserData = useCallback(async () => {
+    if (!user) return;
+    try {
+      const profile = await getUserProfile(user.uid);
+      
+      // Access control: Only allow users with 'pregnancy' stage
+      if (profile?.currentStage && profile.currentStage !== 'pregnancy') {
+        console.warn('Access denied: User stage does not match pregnancy');
+        router.push('/dashboard');
+        return;
+      }
+      
+      if (profile?.displayName) {
+        setUserName(profile.displayName.split(' ')[0]);
+      } else if (user.email) {
+        setUserName(user.email.split('@')[0]);
+      }
+
+      // Load pregnancy information
+      const pregInfo = await getPregnancyInfo(user.uid);
+      setPregnancyInfo(pregInfo);
+
+      if (!pregInfo || (!pregInfo.lastMenstrualPeriod && !pregInfo.dueDate)) {
+        setShowDateModal(true);
+      } else {
+        setShowDateModal(false);
+      }
+
+      // Load latest pregnancy log
+      const log = await getLatestPregnancyLog(user.uid);
+      setLatestLog(log);
+
+      // Generate AI Insight
+      if (!aiInsight && !loadingInsight) {
+        setLoadingInsight(true);
+        try {
+          const insightRes = await fetch('/api/ai/insight', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              stage: 'Pregnancy',
+              insightType: 'daily_wellness',
+              contextData: {
+                currentWeek: pregInfo?.currentWeek || 0,
+                wellnessScore: log?.wellness_score,
+                energy: log?.energy,
+                sleep: log?.sleep,
+                riskLevel: log?.risk_level
+              }
+            })
+          });
+          if (insightRes.ok) {
+            const insightData = await insightRes.json();
+            setAiInsight(insightData);
+          }
+        } catch (err) {
+          console.error('Failed to load AI insight', err);
+        } finally {
+          setLoadingInsight(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, router]);
 
   useEffect(() => {
     if (!user) {
       router.push('/login');
       return;
     }
-
-    const loadUserData = async () => {
-      try {
-        const profile = await getUserProfile(user.uid);
-        
-        // Access control: Only allow users with 'pregnancy' stage
-        if (profile?.currentStage && profile.currentStage !== 'pregnancy') {
-          console.warn('Access denied: User stage does not match pregnancy');
-          router.push('/dashboard');
-          return;
-        }
-        
-        if (profile?.displayName) {
-          setUserName(profile.displayName.split(' ')[0]);
-        } else if (user.email) {
-          setUserName(user.email.split('@')[0]);
-        }
-
-        // Load pregnancy information
-        const pregInfo = await getPregnancyInfo(user.uid);
-        setPregnancyInfo(pregInfo);
-
-        // Load latest pregnancy log
-        const log = await getLatestPregnancyLog(user.uid);
-        setLatestLog(log);
-      } catch (error) {
-        console.error('Error loading user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadUserData();
-  }, [user, router]);
+  }, [user, router, loadUserData]);
 
   if (!user || loading) {
     return (
@@ -88,10 +128,20 @@ export default function PregnancyDashboard() {
     );
   }
 
-  // Calculate pregnancy details
-  const currentWeek = pregnancyInfo?.currentWeek || 24;
-  const trimester = Math.ceil(currentWeek / 13.33);
-  const progress = Math.round((currentWeek / 40) * 100);
+  // Calculate pregnancy details dynamically
+  let currentWeek = 0;
+  if (pregnancyInfo?.lastMenstrualPeriod) {
+    const now = new Date();
+    const lmpDate = new Date(pregnancyInfo.lastMenstrualPeriod);
+    const diffTime = Math.abs(now.getTime() - lmpDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    currentWeek = Math.min(42, Math.floor(diffDays / 7));
+  } else if (pregnancyInfo?.currentWeek) {
+    currentWeek = pregnancyInfo.currentWeek;
+  }
+
+  const trimester = Math.ceil(currentWeek / 13.33) || 1;
+  const progress = Math.round((currentWeek / 40) * 100) || 0;
 
   // Baby size comparisons by week
   const getBabyComparison = (week: number): string => {
@@ -118,45 +168,20 @@ export default function PregnancyDashboard() {
     return '3.3kg';
   };
 
-  // AI Insights based on latest log
-  const getAIInsight = () => {
-    if (!latestLog) {
-      return {
-        title: "Your baby's hearing is developing this week 💜",
-        message: "Start talking or playing soft music; they can now recognize the muffled sound of your voice and heartbeat.",
-        icon: "👂"
-      };
-    }
-
-    if (latestLog.wellness_score && latestLog.wellness_score < 50) {
-      return {
-        title: "Take it easy today",
-        message: "Your wellness score suggests you need more rest. Consider a gentle walk and ensure you're staying hydrated.",
-        icon: "💆‍♀️"
-      };
-    }
-
-    if (latestLog.energy < 5) {
-      return {
-        title: "Boost your energy naturally",
-        message: "Try eating small, frequent meals with protein and complex carbs. A short nap can also help recharge.",
-        icon: "⚡"
-      };
-    }
-
-    return {
-      title: "You're doing great!",
-      message: "Your wellness metrics look good. Keep up the healthy habits and remember to stay active within your comfort zone.",
-      icon: "✨"
-    };
-  };
-
-  const aiInsight = getAIInsight();
+  // Removed hardcoded getAIInsight
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 relative overflow-hidden">
-      {/* Floating Leaves Animation */}
-      <FloatingLeaves />
+    <>
+      {user && (
+        <PregnancyDateModal 
+          isOpen={showDateModal} 
+          userId={user.uid} 
+          onSuccess={loadUserData} 
+        />
+      )}
+      <div className={`min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 relative overflow-hidden transition-all duration-500 ${showDateModal ? 'blur-md pointer-events-none' : ''}`}>
+        {/* Floating Leaves Animation */}
+        <FloatingLeaves />
 
       <PregnancyHeader userName={userName} />
 
@@ -193,9 +218,10 @@ export default function PregnancyDashboard() {
             <div className="lg:col-span-2 space-y-6">
               {/* AI Insight */}
               <AIInsightCard
-                title={aiInsight.title}
-                message={aiInsight.message}
-                icon={aiInsight.icon}
+                title={aiInsight?.title}
+                message={aiInsight?.message}
+                icon={aiInsight?.icon}
+                isLoading={loadingInsight}
               />
 
               {/* Quick Actions */}
@@ -274,5 +300,6 @@ export default function PregnancyDashboard() {
         </div>
       </main>
     </div>
+    </>
   );
 }

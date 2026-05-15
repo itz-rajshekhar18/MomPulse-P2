@@ -602,7 +602,7 @@ export async function getPeriodPrediction(userId: string): Promise<PeriodPredict
 }
 
 // Community Post interfaces
-export type CommunitySection = 'period' | 'pre-pregnancy' | 'postpartum' | 'general';
+export type CommunitySection = 'period' | 'pre-pregnancy' | 'pregnancy' | 'postpartum' | 'general';
 
 export interface CommunityPost {
   id: string;

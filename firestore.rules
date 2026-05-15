@@ -86,11 +86,11 @@ service cloud.firestore {
     }
     
     // Community posts - categorized by section type
-    // Sections: 'period', 'pre-pregnancy', 'postpartum', 'general'
+    // Sections: 'period', 'pre-pregnancy', 'pregnancy', 'postpartum', 'general'
     match /community/{section}/posts/{postId} {
       // Helper function to validate section type
       function isValidSection() {
-        return section == 'period' || section == 'pre-pregnancy' || section == 'postpartum' || section == 'general';
+        return section == 'period' || section == 'pre-pregnancy' || section == 'pregnancy' || section == 'postpartum' || section == 'general';
       }
       
       // Helper function to validate post data

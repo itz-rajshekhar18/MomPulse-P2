@@ -4,7 +4,7 @@ export async function POST(request: NextRequest) {
   try {
     const { messages, stage } = await request.json();
 
-    const apiKey = process.env.NEXT_PUBLIC_OPEN_ROUTER_API_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(

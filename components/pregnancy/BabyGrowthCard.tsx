@@ -24,6 +24,35 @@ export default function BabyGrowthCard({
     return 'Third Trimester';
   };
 
+  const getFruitImage = (comp: string) => {
+    const images: Record<string, string> = {
+      'Poppy Seed': '/images/seeds/poppy_seed_1778887003729.png',
+      'Raspberry': '/images/seeds/raspberry_1778887030580.png',
+      'Lime': '/images/seeds/lime_1778887097763.png',
+      'Avocado': '/images/seeds/avocado_1778887336490.png',
+      'Banana': '/images/seeds/banana_1778887373499.png',
+    };
+    return images[comp] || null;
+  };
+
+  const getFruitEmoji = (comp: string) => {
+    const emojis: Record<string, string> = {
+      'Poppy Seed': '🌑',
+      'Raspberry': '🍓',
+      'Lime': '🍋',
+      'Avocado': '🥑',
+      'Banana': '🍌',
+      'Cantaloupe': '🍈',
+      'Eggplant': '🍆',
+      'Pineapple': '🍍',
+      'Honeydew': '🍈',
+      'Watermelon': '🍉',
+    };
+    return emojis[comp] || '🥚';
+  };
+
+  const fruitImage = getFruitImage(comparison);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -82,8 +111,18 @@ export default function BabyGrowthCard({
         <div className="relative h-64 md:h-80">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-200/30 to-pink-200/30 rounded-3xl" />
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-48 h-48 bg-gradient-to-br from-amber-100 to-amber-200 rounded-full shadow-lg flex items-center justify-center">
-              <span className="text-6xl">🥚</span>
+            <div className="w-48 h-48 bg-gradient-to-br from-amber-100 to-amber-200 rounded-full shadow-lg flex items-center justify-center overflow-hidden border-4 border-white/50">
+              {fruitImage ? (
+                <Image 
+                  src={fruitImage} 
+                  alt={comparison} 
+                  width={192} 
+                  height={192} 
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <span className="text-6xl">{getFruitEmoji(comparison)}</span>
+              )}
             </div>
           </div>
         </div>
