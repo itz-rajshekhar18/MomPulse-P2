@@ -1159,27 +1159,38 @@ export async function getArticlesBySection(
   section: ContentSection,
   limitCount: number = 20
 ): Promise<Article[]> {
-  const articlesRef = collection(db, 'content', 'articles', 'items');
-  const { getDocs, query, where, orderBy, limit } = await import('firebase/firestore');
-  
-  const q = query(
-    articlesRef,
-    where('section', '==', section),
-    where('status', '==', 'published'),
-    orderBy('createdAt', 'desc'),
-    limit(limitCount)
-  );
-  const querySnapshot = await getDocs(q);
+  try {
+    // Fetch from doctorContent collection with approved status
+    const articlesRef = collection(db, 'doctorContent');
+    const { getDocs } = await import('firebase/firestore');
+    
+    const querySnapshot = await getDocs(articlesRef);
 
-  const articles: Article[] = [];
-  querySnapshot.forEach((doc) => {
-    articles.push({
-      id: doc.id,
-      ...doc.data(),
-    } as Article);
-  });
+    const articles: Article[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      // Filter by section and approved status in code
+      if (data.section === section && data.status === 'approved') {
+        articles.push({
+          id: doc.id,
+          ...data,
+        } as Article);
+      }
+    });
 
-  return articles;
+    // Sort by createdAt in code
+    articles.sort((a, b) => {
+      const dateA = a.createdAt?.toMillis() || 0;
+      const dateB = b.createdAt?.toMillis() || 0;
+      return dateB - dateA;
+    });
+
+    // Limit results in code
+    return articles.slice(0, limitCount);
+  } catch (error) {
+    console.error('Error fetching articles:', error);
+    return [];
+  }
 }
 
 // Get videos by section
@@ -1187,65 +1198,106 @@ export async function getVideosBySection(
   section: ContentSection,
   limitCount: number = 20
 ): Promise<Video[]> {
-  const videosRef = collection(db, 'content', 'videos', 'items');
-  const { getDocs, query, where, orderBy, limit } = await import('firebase/firestore');
-  
-  const q = query(
-    videosRef,
-    where('section', '==', section),
-    where('status', '==', 'published'),
-    orderBy('createdAt', 'desc'),
-    limit(limitCount)
-  );
-  const querySnapshot = await getDocs(q);
+  try {
+    // Fetch from doctorContent collection with approved status and type 'video'
+    const videosRef = collection(db, 'doctorContent');
+    const { getDocs } = await import('firebase/firestore');
+    
+    const querySnapshot = await getDocs(videosRef);
 
-  const videos: Video[] = [];
-  querySnapshot.forEach((doc) => {
-    videos.push({
-      id: doc.id,
-      ...doc.data(),
-    } as Video);
-  });
+    const videos: Video[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      // Filter by section, approved status, and type 'video' in code
+      if (data.section === section && data.status === 'approved' && data.type === 'video') {
+        videos.push({
+          id: doc.id,
+          ...data,
+        } as Video);
+      }
+    });
 
-  return videos;
+    // Sort by createdAt in code
+    videos.sort((a, b) => {
+      const dateA = a.createdAt?.toMillis() || 0;
+      const dateB = b.createdAt?.toMillis() || 0;
+      return dateB - dateA;
+    });
+
+    // Limit results in code
+    return videos.slice(0, limitCount);
+  } catch (error) {
+    console.error('Error fetching videos:', error);
+    return [];
+  }
 }
 
 // Get all articles (for admin)
 export async function getAllArticles(): Promise<Article[]> {
-  const articlesRef = collection(db, 'content', 'articles', 'items');
-  const { getDocs, query, orderBy } = await import('firebase/firestore');
-  
-  const q = query(articlesRef, orderBy('createdAt', 'desc'));
-  const querySnapshot = await getDocs(q);
+  try {
+    const articlesRef = collection(db, 'doctorContent');
+    const { getDocs } = await import('firebase/firestore');
+    
+    const querySnapshot = await getDocs(articlesRef);
 
-  const articles: Article[] = [];
-  querySnapshot.forEach((doc) => {
-    articles.push({
-      id: doc.id,
-      ...doc.data(),
-    } as Article);
-  });
+    const articles: Article[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      // Filter only article type content (not videos)
+      if (!data.type || data.type === 'article') {
+        articles.push({
+          id: doc.id,
+          ...data,
+        } as Article);
+      }
+    });
 
-  return articles;
+    // Sort by createdAt in code
+    articles.sort((a, b) => {
+      const dateA = a.createdAt?.toMillis() || 0;
+      const dateB = b.createdAt?.toMillis() || 0;
+      return dateB - dateA;
+    });
+
+    return articles;
+  } catch (error) {
+    console.error('Error fetching all articles:', error);
+    return [];
+  }
 }
 
 // Get all videos (for admin)
 export async function getAllVideos(): Promise<Video[]> {
-  const videosRef = collection(db, 'content', 'videos', 'items');
-  const { getDocs, query, orderBy } = await import('firebase/firestore');
-  
-  const q = query(videosRef, orderBy('createdAt', 'desc'));
-  const querySnapshot = await getDocs(q);
+  try {
+    const videosRef = collection(db, 'doctorContent');
+    const { getDocs } = await import('firebase/firestore');
+    
+    const querySnapshot = await getDocs(videosRef);
 
-  const videos: Video[] = [];
-  querySnapshot.forEach((doc) => {
-    videos.push({
-      id: doc.id,
-      ...doc.data(),
-    } as Video);
-  });
+    const videos: Video[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      // Filter only video type content
+      if (data.type === 'video') {
+        videos.push({
+          id: doc.id,
+          ...data,
+        } as Video);
+      }
+    });
 
-  return videos;
+    // Sort by createdAt in code
+    videos.sort((a, b) => {
+      const dateA = a.createdAt?.toMillis() || 0;
+      const dateB = b.createdAt?.toMillis() || 0;
+      return dateB - dateA;
+    });
+
+    return videos;
+  } catch (error) {
+    console.error('Error fetching all videos:', error);
+    return [];
+  }
 }
 
 // Update article
@@ -1253,7 +1305,7 @@ export async function updateArticle(
   articleId: string,
   updates: Partial<Omit<Article, 'id' | 'createdAt'>>
 ): Promise<void> {
-  const articleRef = doc(db, 'content', 'articles', 'items', articleId);
+  const articleRef = doc(db, 'doctorContent', articleId);
   
   await updateDoc(articleRef, {
     ...updates,
@@ -1266,7 +1318,7 @@ export async function updateVideo(
   videoId: string,
   updates: Partial<Omit<Video, 'id' | 'createdAt'>>
 ): Promise<void> {
-  const videoRef = doc(db, 'content', 'videos', 'items', videoId);
+  const videoRef = doc(db, 'doctorContent', videoId);
   
   await updateDoc(videoRef, {
     ...updates,
@@ -1276,7 +1328,7 @@ export async function updateVideo(
 
 // Delete article
 export async function deleteArticle(articleId: string): Promise<void> {
-  const articleRef = doc(db, 'content', 'articles', 'items', articleId);
+  const articleRef = doc(db, 'doctorContent', articleId);
   const { deleteDoc } = await import('firebase/firestore');
   
   await deleteDoc(articleRef);
@@ -1284,7 +1336,7 @@ export async function deleteArticle(articleId: string): Promise<void> {
 
 // Delete video
 export async function deleteVideo(videoId: string): Promise<void> {
-  const videoRef = doc(db, 'content', 'videos', 'items', videoId);
+  const videoRef = doc(db, 'doctorContent', videoId);
   const { deleteDoc } = await import('firebase/firestore');
   
   await deleteDoc(videoRef);
@@ -1292,7 +1344,7 @@ export async function deleteVideo(videoId: string): Promise<void> {
 
 // Increment article views
 export async function incrementArticleViews(articleId: string): Promise<void> {
-  const articleRef = doc(db, 'content', 'articles', 'items', articleId);
+  const articleRef = doc(db, 'doctorContent', articleId);
   const { increment } = await import('firebase/firestore');
   
   await updateDoc(articleRef, {
@@ -1302,7 +1354,7 @@ export async function incrementArticleViews(articleId: string): Promise<void> {
 
 // Increment video views
 export async function incrementVideoViews(videoId: string): Promise<void> {
-  const videoRef = doc(db, 'content', 'videos', 'items', videoId);
+  const videoRef = doc(db, 'doctorContent', videoId);
   const { increment } = await import('firebase/firestore');
   
   await updateDoc(videoRef, {
@@ -1378,25 +1430,27 @@ export async function getAllDoctors(): Promise<Doctor[]> {
 // Get upcoming sessions
 export async function getUpcomingSessions(limitCount: number = 10): Promise<Session[]> {
   try {
-    const sessionsRef = collection(db, 'sessions');
+    // Fetch from doctorSessions collection with approved status
+    const sessionsRef = collection(db, 'doctorSessions');
     const { getDocs } = await import('firebase/firestore');
     
-    // Simple query without where/orderBy to avoid index requirements
     const querySnapshot = await getDocs(sessionsRef);
 
     const sessions: Session[] = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      // Filter upcoming sessions in code instead of query
-      if (data.status === 'upcoming') {
+      // Filter by approved status in code
+      if (data.status === 'approved') {
         sessions.push({
           id: doc.id,
           ...data,
+          // Set session status based on date/time if not explicitly set
+          status: data.sessionStatus || 'upcoming',
         } as Session);
       }
     });
 
-    // Sort by date in code instead of query
+    // Sort by date in code
     sessions.sort((a, b) => {
       const dateA = new Date(a.date).getTime();
       const dateB = new Date(b.date).getTime();
@@ -1407,6 +1461,38 @@ export async function getUpcomingSessions(limitCount: number = 10): Promise<Sess
     return sessions.slice(0, limitCount);
   } catch (error) {
     console.error('Error fetching sessions:', error);
+    return [];
+  }
+}
+
+// Get all sessions (for admin)
+export async function getAllSessions(): Promise<Session[]> {
+  try {
+    const sessionsRef = collection(db, 'doctorSessions');
+    const { getDocs } = await import('firebase/firestore');
+    
+    const querySnapshot = await getDocs(sessionsRef);
+
+    const sessions: Session[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      sessions.push({
+        id: doc.id,
+        ...data,
+        status: data.sessionStatus || 'upcoming',
+      } as Session);
+    });
+
+    // Sort by date in code
+    sessions.sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA; // Most recent first for admin
+    });
+
+    return sessions;
+  } catch (error) {
+    console.error('Error fetching all sessions:', error);
     return [];
   }
 }
