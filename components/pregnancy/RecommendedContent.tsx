@@ -39,7 +39,7 @@ export default function RecommendedContent({ currentWeek = 24 }: RecommendedCont
           cards.push({
             id: articles[0].id,
             title: articles[0].title,
-            description: articles[0].excerpt || articles[0].content.substring(0, 100) + '...',
+            description: articles[0].excerpt || (articles[0].content ? articles[0].content.substring(0, 100) + '...' : 'Read more...'),
             category: 'ARTICLE',
             image: articles[0].imageUrl || '/images/nutrition-guide.jpg',
             link: `/sanctuary/articles/${articles[0].id}`
